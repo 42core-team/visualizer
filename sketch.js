@@ -5,14 +5,14 @@ let game = {
 			"id": 3,
 			"team_id": 1,
 			"x": 0,
-			"y": 0,
+			"y": 9,
 			"hp": 10000
 		},
 		{
 			"id": 4,
 			"team_id": 2,
-			"x": 4,
-			"y": 4,
+			"x": 9,
+			"y": 0,
 			"hp": 10000
 		}
 	],
@@ -71,24 +71,42 @@ let game = {
 }
 
 
-let cols = 20;
-let rows = 20;
+let cols = 10;
+let rows = 10;
 let boxSize = 20;
+let susSound;
+let emergencySound;
 
 let textureImage;
 
 function preload() {
-	coreTexture = loadImage('core.png');
+	coreTexture = loadImage('minecraft_obsidan.jpeg');
 	dirtTexture = loadImage('dirt.png');
-	goldTexture = loadImage('gold.png');
-	unit1Texture = loadImage('unit1.png');
-	unit2Texture = loadImage('unit2.png');
+	goldTexture = loadImage('minecraft_gold.jpeg');
+	unit_miner1Texture = loadImage('miner1.png');
+	unit_miner2Texture = loadImage('miner2.png');
+	unit_worker1Texture = loadImage('worker1.png');
+	unit_worker2Texture = loadImage('worker2.png');
+	soundFormats('mp3', 'ogg');
+	susSound = loadSound('among-us.mp3');
+	emergencySound = loadSound('emergency-meeting.mp3');
 }
 
 function setup() {
-	frameRate(2);
+	frameRate(30);
 	createCanvas(windowWidth, windowHeight, WEBGL);
 	noStroke();
+	let button = createButton('sus');
+	button.position(0, 100);
+	button.mousePressed(sus);
+	let button1 = createButton('emergency');
+	button1.position(100, 100);
+	button1.mousePressed(emergency);
+	background(220);
+	text('tap here to play', 10, 20);
+	// setTimeout(() => {
+	// 	checkSounds();
+	// }, "10");
 }
 
 function get_texture(x, y) {
@@ -106,10 +124,18 @@ function get_texture(x, y) {
 
 	for (let unit of game.units) {
 		if (unit.x == x && unit.y == y) {
-			if (unit.type_id == 10) {
-				return unit1Texture;
-			} else if (unit.type_id == 11) {
-				return unit2Texture;
+			if (unit.team_id == 1) {
+				if (unit.type_id == 10) {
+					return unit_miner1Texture;
+				} else if (unit.type_id == 11) {
+					return unit_worker1Texture;
+				}
+			} else if (unit.team_id == 2) {
+				if (unit.type_id == 10) {
+					return unit_miner2Texture;
+				} else if (unit.type_id == 11) {
+					return unit_worker2Texture;
+				}
 			}
 		}
 	}
@@ -117,14 +143,22 @@ function get_texture(x, y) {
 	return dirtTexture;
 }
 
+function sus() {
+	susSound.play();
+}
+
+function emergency() {
+	emergencySound.play();
+}
+
 function draw() {
 	game.units[0].x = frameCount % rows;
 	boxSize = (windowWidth / rows) / 2;
 	background(150);
-	rotateX(PI / 5);
-	rotateZ(PI / 2.5);
+	rotateX(PI / 4);
+	rotateZ(PI / 4);
+	// rotate(PI / 4);
 
-  
 	for (let col = 0; col < cols; col++) {
 		for (let row = 0; row < rows; row++) {
 			let x = col * (boxSize);
@@ -132,9 +166,38 @@ function draw() {
 		
 			push();
 			translate(x - (cols - 1) * (boxSize) / 2, y - (rows - 1) * (boxSize) / 2, 0);
-			// box(boxSize)
-			// translate(0, 0, (boxSize / 2) + 1);
+			box(boxSize)
+			translate(0, 0, (boxSize / 2) + 1);
 			texture(get_texture(col, row));
+			// translate(0, 0, (boxSize / 2) + 1);
+			if (get_texture(col, row) != dirtTexture && get_texture(col, row) != coreTexture && get_texture(col, row) != goldTexture) {
+				rotateX(PI / 2);
+				translate(0, boxSize / 2, 0);
+				rotateZ(PI);
+				rotateY(PI / 4);
+				plane(boxSize);
+				rotateZ(-PI);
+				rotateY(PI / 4);
+				translate(0, -boxSize / 2, 0);
+				rotateX(-PI / 2);
+			}else{
+				if (get_texture(col, row) != dirtTexture) {
+					rotateX(PI / 2);
+					translate(0, boxSize / 2, 0);
+					box(boxSize);
+					translate(0, -boxSize / 2, 0);
+					rotateX(-PI / 2);
+					fill('rgb(0,255,0)');
+					translate(0, 0, 100);
+					rotateX(PI / 2);
+					rotateY(-PI / 4);
+					rect(20, 20, 60, 7);
+					rotateY(-PI / 4);
+					rotateX(-PI / 2);
+					translate(0, 0, -100);
+				}
+			}
+			texture(dirtTexture)
 			plane(boxSize);
 			pop();
 		}
