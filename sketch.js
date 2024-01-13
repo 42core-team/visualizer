@@ -80,7 +80,7 @@ let emergencySound;
 let textureImage;
 
 function preload() {
-	coreTexture = loadImage('minecraft_obsidan.jpeg');
+	coreTexture = loadImage('minecraft_obsidian.jpeg');
 	dirtTexture = loadImage('dirt.png');
 	goldTexture = loadImage('minecraft_gold.jpeg');
 	unit_miner1Texture = loadImage('miner1.png');
@@ -93,7 +93,7 @@ function preload() {
 }
 
 function setup() {
-	frameRate(30);
+	frameRate(60);
 	createCanvas(windowWidth, windowHeight, WEBGL);
 	noStroke();
 	let button = createButton('sus');
@@ -152,25 +152,33 @@ function emergency() {
 }
 
 function draw() {
-	game.units[0].x = frameCount % rows;
+	// game.units[0].x = frameCount % rows;
 	boxSize = (windowWidth / rows) / 2;
-	background(150);
+	background(140);
 	rotateX(PI / 4);
 	rotateZ(PI / 4);
 	// rotate(PI / 4);
-
+	// rotateX(PI / 4);
+	// rotateZ(PI / 4);
+	// rotate(PI / 4);
+	// rotateY(PI / 1234567876543);
+	
 	for (let col = 0; col < cols; col++) {
 		for (let row = 0; row < rows; row++) {
 			let x = col * (boxSize);
 			let y = row * (boxSize);
-		
+			
 			push();
 			translate(x - (cols - 1) * (boxSize) / 2, y - (rows - 1) * (boxSize) / 2, 0);
+			texture(dirtTexture)
 			box(boxSize)
 			translate(0, 0, (boxSize / 2) + 1);
 			texture(get_texture(col, row));
 			// translate(0, 0, (boxSize / 2) + 1);
 			if (get_texture(col, row) != dirtTexture && get_texture(col, row) != coreTexture && get_texture(col, row) != goldTexture) {
+				// translate(0, 0, 1);
+				// plane();
+				// translate(0, 0, -1);
 				rotateX(PI / 2);
 				translate(0, boxSize / 2, 0);
 				rotateZ(PI);
@@ -180,19 +188,46 @@ function draw() {
 				rotateY(PI / 4);
 				translate(0, -boxSize / 2, 0);
 				rotateX(-PI / 2);
+				fill('rgb(0,255,0)');
+				translate(1, 1, 100);
+				rotateX(PI / 2);
+				rotateY(-PI / 4);
+				rect(-25, -20, 50, 5);
+				rotateY(PI / 4);
+				rotateX(-PI / 2);
+				translate(-1, -1, -100);
+				fill('rgb(255,0,0)');
+				translate(0, 0, 100);
+				rotateX(PI / 2);
+				rotateY(-PI / 4);
+				rect(-25, -20, 50, 5);
+				rotateY(PI / 4);
+				rotateX(-PI / 2);
+				translate(0, 0, -100);
 			}else{
 				if (get_texture(col, row) != dirtTexture) {
+					// translate(0, 0, 1);
+					// plane();
+					// translate(0, 0, -1);
 					rotateX(PI / 2);
 					translate(0, boxSize / 2, 0);
 					box(boxSize);
 					translate(0, -boxSize / 2, 0);
 					rotateX(-PI / 2);
 					fill('rgb(0,255,0)');
+					translate(1, 1, 100);
+					rotateX(PI / 2);
+					rotateY(-PI / 4);
+					rect(-25, -5, 50, 5);
+					rotateY(PI / 4);
+					rotateX(-PI / 2);
+					translate(-1, -1, -100);
+					fill('rgb(255,0,0)');
 					translate(0, 0, 100);
 					rotateX(PI / 2);
 					rotateY(-PI / 4);
-					rect(20, 20, 60, 7);
-					rotateY(-PI / 4);
+					rect(-25, -5, 50, 5);
+					rotateY(PI / 4);
 					rotateX(-PI / 2);
 					translate(0, 0, -100);
 				}
@@ -205,6 +240,37 @@ function draw() {
 
 	orbitControl();
 }
+
+// function draw() {
+// 	// game.units[0].x = frameCount % rows;
+// 	boxSize = (windowWidth / rows) / 2;
+// 	background(150);
+// 	rotateX(PI / 4);
+// 	rotateZ(PI / 4);
+// 	rotate(PI / 4);
+// 	rotateY(PI / 4);
+
+  
+// 	for (let col = 0; col < cols; col++) {
+// 		for (let row = 0; row < rows; row++) {
+// 			let x = col * (boxSize);
+// 			let y = row * (boxSize);
+		
+// 			push();
+// 			translate(x - (cols - 1) * (boxSize) / 2, y - (rows - 1) * (boxSize) / 2, 0);
+// 			texture(dirtTexture)
+// 			box(boxSize)
+// 			translate(0, 0, (boxSize / 2) + 1);
+// 			texture(get_texture(col, row));
+// 			rotateZ(-PI / 2);
+// 			plane(boxSize);
+// 			// rotateZ(PI / 2);
+// 			pop();
+// 		}
+// 	}
+// 	orbitControl();
+// 	// checkSounds();
+// }
 
 function windowResized() {
 	resizeCanvas(windowWidth, windowHeight);
