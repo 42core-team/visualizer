@@ -1,0 +1,42 @@
+{
+	"width": 10000,
+	"height": 10000,
+	"idle_income": 20,
+	"core_hp": 200,
+	"teams": [
+		{ 
+			"id": 1,
+			"name": "Team 1"
+		},
+		{ 
+			"id": 2,
+			"name": "Team 2"
+		}
+	],
+	"units": [
+		{
+			"name": "Warrior",
+			"type_id": 1,
+			"cost": 100,
+			"hp": 400,
+			"dmg_core": 100,
+			"dmg_unit": 50,
+			"dmg_resouce": 200,
+			"max_range": 3,
+			"min_range": 3,
+			"speed": 50
+		},
+		{
+			"name": "Worker",
+			"type_id": 2,
+			"cost": 100,
+			"hp": 400,
+			"dmg_core": 100,
+			"dmg_unit": 50,
+			"dmg_resouce": 200,
+			"max_range": 3,
+			"min_range": 3,
+			"speed": 50
+		}
+	]
+}

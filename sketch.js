@@ -70,18 +70,52 @@ let game = {
 	]
 }
 
-
-let cols = 10;
-let rows = 10;
-let boxSize = 20;
-let susSound;
-let emergencySound;
-
-let textureImage;
+// let config = {
+// 	"width": 1000,
+// 	"height": 1000,
+// 	"idle_income": 20,
+// 	"core_hp": 200,
+// 	"teams": [
+// 		{ 
+// 			"id": 1,
+// 			"name": "Team 1"
+// 		},
+// 		{ 
+// 			"id": 2,
+// 			"name": "Team 2"
+// 		}
+// 	],
+// 	"units": [
+// 		{
+// 			"name": "Warrior",
+// 			"type_id": 1,
+// 			"cost": 100,
+// 			"hp": 400,
+// 			"dmg_core": 100,
+// 			"dmg_unit": 50,
+// 			"dmg_resouce": 200,
+// 			"max_range": 3,
+// 			"min_range": 3,
+// 			"speed": 50,
+// 		},
+// 		{
+// 			"name": "Worker",
+// 			"type_id": 1,
+// 			"cost": 100,
+// 			"hp": 400,
+// 			"dmg_core": 100,
+// 			"dmg_unit": 50,
+// 			"dmg_resouce": 200,
+// 			"max_range": 3,
+// 			"min_range": 3,
+// 			"speed": 50,
+// 		},
+// 	]
+// }
 
 function preload() {
 	coreTexture = loadImage('minecraft_obsidian.jpeg');
-	dirtTexture = loadImage('dirt.png');
+	dirtTexture = loadImage('light_gray_concrete.png');
 	goldTexture = loadImage('minecraft_gold.jpeg');
 	unit_miner1Texture = loadImage('miner1.png');
 	unit_miner2Texture = loadImage('miner2.png');
@@ -90,9 +124,19 @@ function preload() {
 	soundFormats('mp3', 'ogg');
 	susSound = loadSound('among-us.mp3');
 	emergencySound = loadSound('emergency-meeting.mp3');
+	config = loadJSON('config.json');
 }
 
+let cols;
+let rows;
+let boxSize = 20;
+let susSound;
+let emergencySound;
+let textureImage;
+
 function setup() {
+	cols = config.width / 1000;
+	rows = config.height / 1000;
 	frameRate(60);
 	createCanvas(windowWidth, windowHeight, WEBGL);
 	noStroke();
@@ -105,8 +149,8 @@ function setup() {
 	background(220);
 	text('tap here to play', 10, 20);
 	// setTimeout(() => {
-	// 	checkSounds();
-	// }, "10");
+		// 	checkSounds();
+		// }, "10");
 }
 
 function get_texture(x, y) {
@@ -151,128 +195,128 @@ function emergency() {
 	emergencySound.play();
 }
 
-function draw() {
-	// game.units[0].x = frameCount % rows;
-	boxSize = (windowWidth / rows) / 2;
-	background(140);
-	rotateX(PI / 4);
-	rotateZ(PI / 4);
-	// rotate(PI / 4);
-	// rotateX(PI / 4);
-	// rotateZ(PI / 4);
-	// rotate(PI / 4);
-	// rotateY(PI / 1234567876543);
-	
-	for (let col = 0; col < cols; col++) {
-		for (let row = 0; row < rows; row++) {
-			let x = col * (boxSize);
-			let y = row * (boxSize);
-			
-			push();
-			translate(x - (cols - 1) * (boxSize) / 2, y - (rows - 1) * (boxSize) / 2, 0);
-			texture(dirtTexture)
-			box(boxSize)
-			translate(0, 0, (boxSize / 2) + 1);
-			texture(get_texture(col, row));
-			// translate(0, 0, (boxSize / 2) + 1);
-			if (get_texture(col, row) != dirtTexture && get_texture(col, row) != coreTexture && get_texture(col, row) != goldTexture) {
-				// translate(0, 0, 1);
-				// plane();
-				// translate(0, 0, -1);
-				rotateX(PI / 2);
-				translate(0, boxSize / 2, 0);
-				rotateZ(PI);
-				rotateY(PI / 4);
-				plane(boxSize);
-				rotateZ(-PI);
-				rotateY(PI / 4);
-				translate(0, -boxSize / 2, 0);
-				rotateX(-PI / 2);
-				fill('rgb(0,255,0)');
-				translate(1, 1, 100);
-				rotateX(PI / 2);
-				rotateY(-PI / 4);
-				rect(-25, -20, 50, 5);
-				rotateY(PI / 4);
-				rotateX(-PI / 2);
-				translate(-1, -1, -100);
-				fill('rgb(255,0,0)');
-				translate(0, 0, 100);
-				rotateX(PI / 2);
-				rotateY(-PI / 4);
-				rect(-25, -20, 50, 5);
-				rotateY(PI / 4);
-				rotateX(-PI / 2);
-				translate(0, 0, -100);
-			}else{
-				if (get_texture(col, row) != dirtTexture) {
-					// translate(0, 0, 1);
-					// plane();
-					// translate(0, 0, -1);
-					rotateX(PI / 2);
-					translate(0, boxSize / 2, 0);
-					box(boxSize);
-					translate(0, -boxSize / 2, 0);
-					rotateX(-PI / 2);
-					fill('rgb(0,255,0)');
-					translate(1, 1, 100);
-					rotateX(PI / 2);
-					rotateY(-PI / 4);
-					rect(-25, -5, 50, 5);
-					rotateY(PI / 4);
-					rotateX(-PI / 2);
-					translate(-1, -1, -100);
-					fill('rgb(255,0,0)');
-					translate(0, 0, 100);
-					rotateX(PI / 2);
-					rotateY(-PI / 4);
-					rect(-25, -5, 50, 5);
-					rotateY(PI / 4);
-					rotateX(-PI / 2);
-					translate(0, 0, -100);
-				}
-			}
-			texture(dirtTexture)
-			plane(boxSize);
-			pop();
-		}
-	}
-
-	orbitControl();
-}
-
 // function draw() {
 // 	// game.units[0].x = frameCount % rows;
 // 	boxSize = (windowWidth / rows) / 2;
-// 	background(150);
+// 	background(140);
 // 	rotateX(PI / 4);
 // 	rotateZ(PI / 4);
-// 	rotate(PI / 4);
-// 	rotateY(PI / 4);
-
-  
+// 	// rotate(PI / 4);
+// 	// rotateX(PI / 4);
+// 	// rotateZ(PI / 4);
+// 	// rotate(PI / 4);
+// 	// rotateY(PI / 1234567876543);
+	
 // 	for (let col = 0; col < cols; col++) {
 // 		for (let row = 0; row < rows; row++) {
 // 			let x = col * (boxSize);
 // 			let y = row * (boxSize);
-		
+			
 // 			push();
 // 			translate(x - (cols - 1) * (boxSize) / 2, y - (rows - 1) * (boxSize) / 2, 0);
 // 			texture(dirtTexture)
 // 			box(boxSize)
 // 			translate(0, 0, (boxSize / 2) + 1);
 // 			texture(get_texture(col, row));
-// 			rotateZ(-PI / 2);
+// 			// translate(0, 0, (boxSize / 2) + 1);
+// 			if (get_texture(col, row) != dirtTexture && get_texture(col, row) != coreTexture && get_texture(col, row) != goldTexture) {
+// 				// translate(0, 0, 1);
+// 				// plane();
+// 				// translate(0, 0, -1);
+// 				rotateX(PI / 2);
+// 				translate(0, boxSize / 2, 0);
+// 				rotateZ(PI);
+// 				rotateY(PI / 4);
+// 				plane(boxSize);
+// 				rotateZ(-PI);
+// 				rotateY(PI / 4);
+// 				translate(0, -boxSize / 2, 0);
+// 				rotateX(-PI / 2);
+// 				fill('rgb(0,255,0)');
+// 				translate(1, 1, 100);
+// 				rotateX(PI / 2);
+// 				rotateY(-PI / 4);
+// 				rect(-25, -20, 50, 5);
+// 				rotateY(PI / 4);
+// 				rotateX(-PI / 2);
+// 				translate(-1, -1, -100);
+// 				fill('rgb(255,0,0)');
+// 				translate(0, 0, 100);
+// 				rotateX(PI / 2);
+// 				rotateY(-PI / 4);
+// 				rect(-25, -20, 50, 5);
+// 				rotateY(PI / 4);
+// 				rotateX(-PI / 2);
+// 				translate(0, 0, -100);
+// 			}else{
+// 				if (get_texture(col, row) != dirtTexture) {
+// 					// translate(0, 0, 1);
+// 					// plane();
+// 					// translate(0, 0, -1);
+// 					rotateX(PI / 2);
+// 					translate(0, boxSize / 2, 0);
+// 					box(boxSize);
+// 					translate(0, -boxSize / 2, 0);
+// 					rotateX(-PI / 2);
+// 					fill('rgb(0,255,0)');
+// 					translate(1, 1, 100);
+// 					rotateX(PI / 2);
+// 					rotateY(-PI / 4);
+// 					rect(-25, -5, 50, 5);
+// 					rotateY(PI / 4);
+// 					rotateX(-PI / 2);
+// 					translate(-1, -1, -100);
+// 					fill('rgb(255,0,0)');
+// 					translate(0, 0, 100);
+// 					rotateX(PI / 2);
+// 					rotateY(-PI / 4);
+// 					rect(-25, -5, 50, 5);
+// 					rotateY(PI / 4);
+// 					rotateX(-PI / 2);
+// 					translate(0, 0, -100);
+// 				}
+// 			}
+// 			texture(dirtTexture)
 // 			plane(boxSize);
-// 			// rotateZ(PI / 2);
 // 			pop();
 // 		}
 // 	}
+
 // 	orbitControl();
-// 	// checkSounds();
 // }
+
+function draw() {
+	// game.units[0].x = frameCount % rows;
+	boxSize = (windowWidth / rows) / 2;
+	background(150);
+	// rotateX(PI / 4);
+	// rotateZ(PI / 4);
+	// rotate(PI / 4);
+			// rotateY(PI / 4);
+
+  
+	for (let col = 0; col < cols; col++) {
+		for (let row = 0; row < rows; row++) {
+			let x = col * (boxSize);
+			let y = row * (boxSize);
+		
+			push();
+			translate(x - (cols - 1) * (boxSize) / 2, y - (rows - 1) * (boxSize) / 2, 0);
+			// rotateZ(-PI / 2);
+			texture(dirtTexture)
+			box(boxSize)
+			translate(0, 0, (boxSize / 2) + 1);
+			texture(get_texture(col, row));
+			plane(boxSize);
+			pop();
+		}
+	}
+	orbitControl();
+
+}
 
 function windowResized() {
 	resizeCanvas(windowWidth, windowHeight);
 	boxSize = min(width, height) / max(cols, rows) - 10;
 }
+
