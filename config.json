@@ -2,7 +2,7 @@
 	"width": 30000,
 	"height": 30000,
 	"idle_income": 20,
-	"core_hp": 200,
+	"core_hp": 10000,
 	"teams": [
 		{ 
 			"id": 1,
