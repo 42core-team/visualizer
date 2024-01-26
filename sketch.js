@@ -121,6 +121,10 @@
 // 	]
 // }
 
+let numFields = 35;
+let boxSize;
+let zoomFactor;
+
 function preload() {
 	coreTexture = loadImage('minecraft_obsidian.jpeg');
 	dirtTexture = loadImage('light_gray_concrete-2.png');
@@ -138,10 +142,10 @@ function preload() {
 
 let cols;
 let rows;
-let boxSize = 20;
 let susSound;
 let emergencySound;
 let textureImage;
+let slider;
 
 function setup() {
 	cols = config.width / 1000;
@@ -160,42 +164,56 @@ function setup() {
 	// setTimeout(() => {
 		// 	checkSounds();
 		// }, "10");
+
+	slider = createSlider(10, 60);
+	slider.position(10, 10);
+	slider.size(190);
+	slider.value(35);
 }
 
-function get_texture(x, y) {
-	for (let core of game.cores) {
-		if (core.x == x && core.y == y) {
-			return coreTexture;
-		}
-	}
-
-	for (let resource of game.resources) {
-		if (resource.x == x && resource.y == y) {
-			return goldTexture;
-		}
-	}
-
-	for (let unit of game.units) {
-		if (unit.x == x && unit.y == y) {
-			if (unit.team_id == 1) {
-				if (unit.type_id == 10) {
-					return unit_miner1Texture;
-				} else if (unit.type_id == 11) {
-					return unit_worker1Texture;
-				}
-			} else if (unit.team_id == 2) {
-				if (unit.type_id == 10) {
-					return unit_miner2Texture;
-				} else if (unit.type_id == 11) {
-					return unit_worker2Texture;
-				}
-			}
-		}
-	}
-
-	// return dirtTexture;
-	return (0);
+function custom_scale() {
+	cols = slider.value();
+	rows = slider.value();
+	numFields = slider.value() + 3;
+	let smallerDimension = min(width, height);
+	boxSize = smallerDimension / numFields;
+	zoomFactor = boxSize/1000;
 }
+
+// function get_texture(x, y) {
+// 	for (let core of game.cores) {
+// 		if (floor(core.x * zoomFactor) == x && floor(core.y * zoomFactor) == y) {
+// 			return coreTexture;
+// 		}
+// 	}
+
+// 	for (let resource of game.resources) {
+// 		if (floor(resource.x * zoomFactor) == x && floor(resource.y * zoomFactor) == y) {
+// 			return goldTexture;
+// 		}
+// 	}
+
+// 	for (let unit of game.units) {
+// 		if (floor(unit.x * zoomFactor) == x && floor(unit.y * zoomFactor) == y) {
+// 			if (unit.team_id == 1) {
+// 				if (unit.type_id == 10) {
+// 					return unit_miner1Texture;
+// 				} else if (unit.type_id == 11) {
+// 					return unit_worker1Texture;
+// 				}
+// 			} else if (unit.team_id == 2) {
+// 				if (unit.type_id == 10) {
+// 					return unit_miner2Texture;
+// 				} else if (unit.type_id == 11) {
+// 					return unit_worker2Texture;
+// 				}
+// 			}
+// 		}
+// 	}
+
+// 	// return dirtTexture;
+// 	return (0);
+// }
 
 function sus() {
 	susSound.play();
@@ -206,12 +224,9 @@ function emergency() {
 }
 
 function draw() {
-
-}
-
-function draw() {
+	custom_scale();
 	// game.units[0].x = frameCount % rows;
-	boxSize = (windowWidth / rows) / 2;
+	//boxSize = (windowWidth / rows) / 2;
 	background(150);
 	// rotateX(PI / 4);
 	// rotateZ(PI / 4);
@@ -223,21 +238,70 @@ function draw() {
 		for (let row = 0; row < rows; row++) {
 			let x = col * (boxSize);
 			let y = row * (boxSize);
-		
 			push();
 			translate(x - (cols - 1) * (boxSize) / 2, y - (rows - 1) * (boxSize) / 2, 0);
 			// rotateZ(-PI / 2);
 			texture(dirtTexture)
 			box(boxSize)
 			translate(0, 0, (boxSize / 2) + 1);
-			if (get_texture(col, row) != 0) {
-				texture(get_texture(col, row));
-				plane(boxSize);
-			}
+			// if (get_texture(col, row) != 0) {
+			// 	texture(get_texture(col, row));
+			// 	plane(boxSize);
+			// }
 			pop();
 		}
 	}
-	orbitControl();
+	for (let core of game.cores) {
+		push();
+		translatex = floor(core.x * zoomFactor);
+		translatey = floor(core.y * zoomFactor);
+		translate(translatex, translatey, 30);
+		texture(coreTexture);
+		plane(boxSize);
+		translatex = -floor(core.x * zoomFactor);
+		translatey = -floor(core.y * zoomFactor);
+		translate(translatex, translatey, 30);
+		pop();
+	}
+
+	for (let resource of game.resources) {
+		push();
+		translatex = floor(resource.x * zoomFactor);
+		translatey = floor(resource.y * zoomFactor);
+		translate(translatex, translatey, 30);
+		texture(goldTexture);
+		plane(boxSize);
+		translatex = -floor(resource.x * zoomFactor);
+		translatey = -floor(resource.y * zoomFactor);
+		translate(translatex, translatey, 30);
+		pop();
+	}
+
+	for (let unit of game.units) {
+		push();
+		translatex = floor(unit.x * zoomFactor);
+		translatey = floor(unit.y * zoomFactor);
+		translate(translatex, translatey, 30);
+		if(unit.team_id == 1){
+			if(unit.type_id == 10){
+				texture(unit_miner1Texture);
+			}else if(unit.type_id == 11){
+				texture(unit_worker1Texture);
+			}
+		}else if(unit.team_id == 2){
+			if(unit.type_id == 10){
+				texture(unit_miner2Texture);
+			}else if(unit.type_id == 11){
+				texture(unit_worker2Texture);
+			}
+		}
+		plane(boxSize);
+		translatex = -floor(unit.x * zoomFactor);
+		translatey = -floor(unit.y * zoomFactor);
+		translate(translatex, translatey, 30);
+		pop();
+	}
+	// orbitControl();
 }
 
 // function draw() {
