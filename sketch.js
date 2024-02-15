@@ -1,11 +1,7 @@
 let numFields = 35;
 let boxSize;
-let zoomFactor;
 let cols;
 let rows;
-let susSound;
-let emergencySound;
-let textureImage;
 let slider;
 let factor;
 
@@ -44,8 +40,6 @@ function custom_scale()
 	numFields = slider.value() + 3;
 	let smallerDimension = min(width, height);
 	boxSize = smallerDimension / numFields;
-	zoomFactor = boxSize/1000;
-	// console.log(zoomFactor);
 }
 
 function draw() 
