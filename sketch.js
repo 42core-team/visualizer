@@ -7,6 +7,7 @@ let susSound;
 let emergencySound;
 let textureImage;
 let slider;
+let factor;
 
 function preload() 
 {
@@ -44,6 +45,7 @@ function custom_scale()
 	let smallerDimension = min(width, height);
 	boxSize = smallerDimension / numFields;
 	zoomFactor = boxSize/1000;
+	// console.log(zoomFactor);
 }
 
 function draw() 
@@ -66,40 +68,41 @@ function draw()
 			pop();
 		}
 	}
+
 	for (let core of game.cores) 
 	{
-		push();
-		translatex = floor(core.x * zoomFactor);
-		translatey = floor(core.y * zoomFactor);
-		translate(translatex, translatey, 30);
+		factor = (cols * boxSize) / config.width;
+		push()
+		translate(-(boxSize * cols / 2 - boxSize / 2), -(boxSize * cols / 2 - boxSize / 2), 50)
+		translatex = core.x * factor;
+		translatey = core.y * factor;
+		translate(translatex, translatey, 0);
 		texture(coreTexture);
 		plane(boxSize);
-		translatex = -floor(core.x * zoomFactor);
-		translatey = -floor(core.y * zoomFactor);
-		translate(translatex, translatey, 30);
-		pop();
+		pop()
 	}
 
 	for (let resource of game.resources) 
 	{
-		push();
-		translatex = floor(resource.x * zoomFactor);
-		translatey = floor(resource.y * zoomFactor);
-		translate(translatex, translatey, 30);
+		factor = (cols * boxSize) / config.width;
+		push()
+		translate(-(boxSize * cols / 2 - boxSize / 2), -(boxSize * cols / 2 - boxSize / 2), 50)
+		translatex = resource.x * factor;
+		translatey = resource.y * factor;
+		translate(translatex, translatey, 0);
 		texture(goldTexture);
 		plane(boxSize);
-		translatex = -floor(resource.x * zoomFactor);
-		translatey = -floor(resource.y * zoomFactor);
-		translate(translatex, translatey, 30);
-		pop();
+		pop()
 	}
 
 	for (let unit of game.units) 
 	{
-		push();
-		translatex = floor(unit.x * zoomFactor);
-		translatey = floor(unit.y * zoomFactor);
-		translate(translatex, translatey, 30);
+		factor = (cols * boxSize) / config.width;
+		push()
+		translate(-(boxSize * cols / 2 - boxSize / 2), -(boxSize * cols / 2 - boxSize / 2), 50)
+		translatex = unit.x * factor;
+		translatey = unit.y * factor;
+		translate(translatex, translatey, 0);
 		if(unit.team_id == 1)
 		{
 			if(unit.type_id == 10)
@@ -123,11 +126,57 @@ function draw()
 			}
 		}
 		plane(boxSize);
-		translatex = -floor(unit.x * zoomFactor);
-		translatey = -floor(unit.y * zoomFactor);
-		translate(translatex, translatey, 30);
-		pop();
+		pop()
 	}
+
+	// for (let resource of game.resources) 
+	// {
+	// 	push();
+	// 	translatex = floor(resource.x * zoomFactor);
+	// 	translatey = floor(resource.y * zoomFactor);
+	// 	translate(translatex, translatey, 30);
+	// 	texture(goldTexture);
+	// 	plane(boxSize);
+	// 	translatex = -floor(resource.x * zoomFactor);
+	// 	translatey = -floor(resource.y * zoomFactor);
+	// 	translate(translatex, translatey, 30);
+	// 	pop();
+	// }
+
+	// for (let unit of game.units) 
+	// {
+	// 	push();
+	// 	translatex = floor(unit.x * zoomFactor);
+	// 	translatey = floor(unit.y * zoomFactor);
+	// 	translate(translatex, translatey, 30);
+	// 	if(unit.team_id == 1)
+	// 	{
+	// 		if(unit.type_id == 10)
+	// 		{
+	// 			texture(unit_miner1Texture);
+	// 		}
+	// 		else if(unit.type_id == 11)
+	// 		{
+	// 			texture(unit_worker1Texture);
+	// 		}
+	// 	}
+	// 	else if(unit.team_id == 2)
+	// 	{
+	// 		if(unit.type_id == 10)
+	// 		{
+	// 			texture(unit_miner2Texture);
+	// 		}
+	// 		else if(unit.type_id == 11)
+	// 		{
+	// 			texture(unit_worker2Texture);
+	// 		}
+	// 	}
+	// 	plane(boxSize);
+	// 	translatex = -floor(unit.x * zoomFactor);
+	// 	translatey = -floor(unit.y * zoomFactor);
+	// 	translate(translatex, translatey, 30);
+	// 	pop();
+	// }
 }
 
 function windowResized()
