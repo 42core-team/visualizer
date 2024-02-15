@@ -128,55 +128,6 @@ function draw()
 		plane(boxSize);
 		pop()
 	}
-
-	// for (let resource of game.resources) 
-	// {
-	// 	push();
-	// 	translatex = floor(resource.x * zoomFactor);
-	// 	translatey = floor(resource.y * zoomFactor);
-	// 	translate(translatex, translatey, 30);
-	// 	texture(goldTexture);
-	// 	plane(boxSize);
-	// 	translatex = -floor(resource.x * zoomFactor);
-	// 	translatey = -floor(resource.y * zoomFactor);
-	// 	translate(translatex, translatey, 30);
-	// 	pop();
-	// }
-
-	// for (let unit of game.units) 
-	// {
-	// 	push();
-	// 	translatex = floor(unit.x * zoomFactor);
-	// 	translatey = floor(unit.y * zoomFactor);
-	// 	translate(translatex, translatey, 30);
-	// 	if(unit.team_id == 1)
-	// 	{
-	// 		if(unit.type_id == 10)
-	// 		{
-	// 			texture(unit_miner1Texture);
-	// 		}
-	// 		else if(unit.type_id == 11)
-	// 		{
-	// 			texture(unit_worker1Texture);
-	// 		}
-	// 	}
-	// 	else if(unit.team_id == 2)
-	// 	{
-	// 		if(unit.type_id == 10)
-	// 		{
-	// 			texture(unit_miner2Texture);
-	// 		}
-	// 		else if(unit.type_id == 11)
-	// 		{
-	// 			texture(unit_worker2Texture);
-	// 		}
-	// 	}
-	// 	plane(boxSize);
-	// 	translatex = -floor(unit.x * zoomFactor);
-	// 	translatey = -floor(unit.y * zoomFactor);
-	// 	translate(translatex, translatey, 30);
-	// 	pop();
-	// }
 }
 
 function windowResized()
