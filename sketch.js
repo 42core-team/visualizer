@@ -17,9 +17,6 @@ function preload()
 	unit_miner2Texture = loadImage('assets/images/miner_2.png');
 	unit_worker1Texture = loadImage('assets/images/warrior_1.png');
 	unit_worker2Texture = loadImage('assets/images/warrior_2.png');
-	soundFormats('mp3', 'ogg');
-	susSound = loadSound('assets/sounds/among-us.mp3');
-	emergencySound = loadSound('assets/sounds/emergency-meeting.mp3');
 	config = loadJSON('assets/data/config.json');
 	game = loadJSON('assets/data/state.json');
 }
@@ -31,12 +28,6 @@ function setup()
 	frameRate(60);
 	createCanvas(windowWidth, windowHeight, WEBGL);
 	noStroke();
-	let button = createButton('sus');
-	button.position(0, 100);
-	button.mousePressed(sus);
-	let button1 = createButton('emergency');
-	button1.position(100, 100);
-	button1.mousePressed(emergency);
 	background(220);
 
 	slider = createSlider(10, 60);
@@ -53,16 +44,6 @@ function custom_scale()
 	let smallerDimension = min(width, height);
 	boxSize = smallerDimension / numFields;
 	zoomFactor = boxSize/1000;
-}
-
-function sus() 
-{
-	susSound.play();
-}
-
-function emergency() 
-{
-	emergencySound.play();
 }
 
 function draw() 
