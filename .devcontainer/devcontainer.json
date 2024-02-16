@@ -1,0 +1,20 @@
+{
+	"name": "Go",
+	"dockerComposeFile": "docker-compose.yml",
+	"service": "app",
+	"workspaceFolder": "/workspace",
+	"customizations": {
+		"settings": {
+			"go.gopath": "/go",
+			"go.toolsGopath": "/go",
+			"go.useLanguageServer": true
+		},
+		"vscode": {
+			"extensions": [
+				"golang.go",
+				"bierner.markdown-mermaid",
+				"ms-azuretools.vscode-docker"
+			]
+		}
+	}
+}
