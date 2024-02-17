@@ -1,20 +1,12 @@
 package main
 
 import (
+	"core/visualizer/env"
 	"core/visualizer/websockethandler"
-	"os"
 
 	"github.com/gofiber/contrib/websocket"
 	"github.com/gofiber/fiber/v2"
 )
-
-func getEnv(key, defaultValue string) string {
-	value := os.Getenv(key)
-	if len(value) == 0 {
-		return defaultValue
-	}
-	return value
-}
 
 func main() {
 	app := fiber.New()
@@ -33,5 +25,5 @@ func main() {
 
 	app.Get("/ws", websocket.New(websockethandler.HandleWebSocket))
 
-	app.Listen(":" + getEnv("PORT", "3000"))
+	app.Listen(":" + env.GetEnv("PORT", "3000"))
 }

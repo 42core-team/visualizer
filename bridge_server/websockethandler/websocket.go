@@ -1,6 +1,7 @@
 package websockethandler
 
 import (
+	"core/visualizer/socket"
 	"log"
 
 	"github.com/gofiber/contrib/websocket"
@@ -8,10 +9,10 @@ import (
 
 func HandleWebSocket(con *websocket.Conn) {
 	// con.Locals is added to the *websocket.Conn
-	log.Println(con.Locals("allowed"))  // true
-	log.Println(con.Params("id"))       // 123
-	log.Println(con.Query("v"))         // 1.0
-	log.Println(con.Cookies("session")) // ""
+	// log.Println(con.Locals("allowed"))  // true
+	// log.Println(con.Params("id"))       // 123
+	// log.Println(con.Query("v"))         // 1.0
+	// log.Println(con.Cookies("session")) // ""
 
 	// websocket.Conn bindings https://pkg.go.dev/github.com/fasthttp/websocket?tab=doc#pkg-index
 	var (
@@ -19,12 +20,30 @@ func HandleWebSocket(con *websocket.Conn) {
 		msg []byte
 		err error
 	)
+
+	conn, err := socket.InitSocket()
+	if err != nil {
+		log.Println("Error connecting to socket server")
+		return
+	}
+
 	for {
 		if mt, msg, err = con.ReadMessage(); err != nil {
 			log.Println("read:", err)
 			break
 		}
-		log.Printf("recv: %s", msg)
+		// log.Printf("recv: %s", msg)
+		_, err = socket.WriteToSocket(conn, msg)
+		if err != nil {
+			log.Println("socket write:", err)
+			break
+		}
+
+		_, err = socket.ReadFromSocket(conn, &msg)
+		if err != nil {
+			log.Println("socket read:", err)
+			break
+		}
 
 		if err = con.WriteMessage(mt, msg); err != nil {
 			log.Println("write:", err)
