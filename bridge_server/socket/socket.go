@@ -6,7 +6,7 @@ import (
 )
 
 func InitSocket() (net.Conn, error) {
-	conn, err := net.Dial("tcp", env.GetEnv("SOCKET_SERVER", "172.17.0.2:4242"))
+	conn, err := net.Dial("tcp", env.GetEnv("SOCKET_SERVER", "host.docker.internal:4242"))
 	return conn, err
 }
 

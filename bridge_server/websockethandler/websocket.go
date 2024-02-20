@@ -27,27 +27,36 @@ func HandleWebSocket(con *websocket.Conn) {
 		return
 	}
 
-	for {
-		if mt, msg, err = con.ReadMessage(); err != nil {
-			log.Println("read:", err)
-			break
+	go func() {
+		for {
+			if mt, msg, err = con.ReadMessage(); err != nil {
+				log.Println("read:", err)
+				break
+			}
+			// log.Printf("recv: %s", msg)
+			_, err := socket.WriteToSocket(conn, msg)
+			if err != nil {
+				log.Println("socket write:", err)
+				break
+			}
 		}
-		// log.Printf("recv: %s", msg)
-		_, err = socket.WriteToSocket(conn, msg)
-		if err != nil {
-			log.Println("socket write:", err)
-			break
-		}
+	}()
 
-		_, err = socket.ReadFromSocket(conn, &msg)
-		if err != nil {
-			log.Println("socket read:", err)
-			break
-		}
+	go func() {
+		for {
+			msgSocket := make([]byte, 4096)
 
-		if err = con.WriteMessage(mt, msg); err != nil {
-			log.Println("write:", err)
-			break
+			_, err = socket.ReadFromSocket(conn, &msgSocket)
+			if err != nil {
+				log.Println("socket read:", err)
+				break
+			}
+
+			if err = con.WriteMessage(mt, msgSocket); err != nil {
+				log.Println("write:", err)
+				break
+			}
 		}
-	}
+	}()
+	select {}
 }
