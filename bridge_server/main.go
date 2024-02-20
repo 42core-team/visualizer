@@ -11,7 +11,7 @@ import (
 func main() {
 	app := fiber.New()
 
-	app.Static("/", "../")
+	app.Static("/", "/public")
 
 	app.Use("/ws", func(c *fiber.Ctx) error {
 		// IsWebSocketUpgrade returns true if the client

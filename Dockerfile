@@ -2,11 +2,10 @@ FROM golang:latest
 
 WORKDIR /app
 
-COPY go.mod go.sum ./
+COPY bridge_server/ /app/
+COPY public/ /app/public/
+
 RUN go mod download
-
-COPY . .
-
 RUN go build -o /bridge_server
 
 EXPOSE 3000
