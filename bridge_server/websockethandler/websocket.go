@@ -21,7 +21,7 @@ func HandleWebSocket(con *websocket.Conn) {
 		err error
 	)
 
-	conn, err := socket.InitSocket()
+	socketCon, err := socket.InitSocket()
 	if err != nil {
 		log.Println("Error connecting to socket server")
 		return
@@ -34,7 +34,7 @@ func HandleWebSocket(con *websocket.Conn) {
 				break
 			}
 			// log.Printf("recv: %s", msg)
-			_, err := socket.WriteToSocket(conn, msg)
+			_, err := socket.WriteToSocket(socketCon, msg)
 			if err != nil {
 				log.Println("socket write:", err)
 				break
@@ -46,7 +46,7 @@ func HandleWebSocket(con *websocket.Conn) {
 		for {
 			msgSocket := make([]byte, 4096)
 
-			_, err = socket.ReadFromSocket(conn, &msgSocket)
+			_, err = socket.ReadFromSocket(socketCon, &msgSocket)
 			if err != nil {
 				log.Println("socket read:", err)
 				break
