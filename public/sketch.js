@@ -12,7 +12,7 @@ let invalidCharRegex = /[\u0000-\u001F\u007F-\u009F]/g;
 let font;
 
 
-function preload()  
+function preload()
 {
 	coreTexture = loadImage('assets/images/core.png');
 	dirtTexture = loadImage('assets/images/dirt.png');
@@ -26,9 +26,9 @@ function preload()
 	font = loadFont('assets/font/Roboto-Regular.ttf');
 }
 
-function setup() 
+function setup()
 {
-	socket = new WebSocket('ws://localhost:3000/ws');
+	socket = new WebSocket('ws://{{.socket}}/ws');
 
 	// WebSocket event listeners
 	socket.onopen = () => {
@@ -60,7 +60,7 @@ function setup()
 
 	socket.onclose = () => {
 		console.log('WebSocket connection closed');
-	};	
+	};
 
 	cols = config.width / 1000;
 	rows = config.height / 1000;
@@ -76,7 +76,7 @@ function setup()
 	slider.value(35);
 }
 
-function custom_scale() 
+function custom_scale()
 {
 	cols = slider.value();
 	rows = slider.value();
@@ -85,26 +85,26 @@ function custom_scale()
 	boxSize = smallerDimension / numFields;
 }
 
-function draw() 
+function draw()
 {
-	if (socket.readyState === WebSocket.OPEN && unauthorized) {
+	while (socket.readyState === WebSocket.OPEN && unauthorized) {
 		socket.send('{"id":42}');
 		unauthorized = false;
 	}
 	custom_scale();
 	background(150);
 
-  
-	for (let col = 0; col < cols; col++) 
+
+	for (let col = 0; col < cols; col++)
 	{
-		for (let row = 0; row < rows; row++) 
+		for (let row = 0; row < rows; row++)
 		{
 			let x = col * (boxSize);
 			let y = row * (boxSize);
 			push();
 			translate(x - (cols - 1) * (boxSize) / 2, y - (rows - 1) * (boxSize) / 2, 0);
-			texture(dirtTexture)
-			box(boxSize)
+			texture(dirtTexture);
+			box(boxSize);
 			translate(0, 0, (boxSize / 2) + 1);
 			pop();
 		}
@@ -112,7 +112,7 @@ function draw()
 
 	if(game.cores)
 	{
-		for (let core of game.cores) 
+		for (let core of game.cores)
 		{
 			if (core.pos) {
 				factor = (cols * boxSize) / config.width;
@@ -129,7 +129,7 @@ function draw()
 	}
 	if(game.resources)
 	{
-		for (let resource of game.resources) 
+		for (let resource of game.resources)
 		{
 			if(resource.pos) {
 				factor = (cols * boxSize) / config.width;
@@ -147,7 +147,7 @@ function draw()
 
 	if(game.units)
 	{
-		for (let unit of game.units) 
+		for (let unit of game.units)
 		{
 			if(unit.pos){
 				factor = (cols * boxSize) / config.width;
