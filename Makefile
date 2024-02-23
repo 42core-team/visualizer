@@ -6,7 +6,7 @@ run: build
 	@echo "Visualizer is running on http://localhost:3000"
 
 build:
-	docker build -t $(IMAGE_NAME):$(IMAGE_TAG) .
+	docker buildx build --platform linux/amd64,linux/arm64/v8 -t $(IMAGE_NAME):$(IMAGE_TAG) .
 
 push: build
 	docker push $(IMAGE_NAME):$(IMAGE_TAG)
