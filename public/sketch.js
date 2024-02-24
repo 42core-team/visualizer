@@ -18,48 +18,36 @@ const types = {
 }
 
 
-function draw_health_bar(hp, type, type_id = 1)
-{
+function draw_health_bar(hp, type, type_id = 1) {
 	let max_health = 0;
 	if(type == types.CORE)
-	{
-		max_health = config.core_hp
-	}
-	else if (type == types.UNIT)
-	{
-		for (unit of game.units)
-		{
+		max_health = config.core_hp;
+	else if (type == types.UNIT) {
+		for (unit of game.units) {
 			if (unit.type_id == type_id)
-			{
 				max_health = unit.hp;
-			}
 		}
 	}
 	else if(type == types.RESOURCE)
-	{
-		max_health = 4000
-	}
+		max_health = 4000;
 	percent_hp = (100 / max_health * hp) / 100;
-	if(type == types.UNIT)
-	{
-		fill('green')
-		rect(0, boxSize - boxSize / 5, boxSize * percent_hp, boxSize / 5)
-		fill('red')
-		rect(boxSize * percent_hp, boxSize - boxSize / 5, boxSize - boxSize * percent_hp, boxSize / 5)
-		noFill() 
+	if(type == types.UNIT) {
+		fill('green');
+		rect(0, boxSize - boxSize / 5, boxSize * percent_hp, boxSize / 5);
+		fill('red');
+		rect(boxSize * percent_hp, boxSize - boxSize / 5, boxSize - boxSize * percent_hp, boxSize / 5);
+		noFill();
 	}
-	else 
-	{
-		fill('green')
-		rect(0, - boxSize / 5, boxSize * percent_hp, boxSize / 5)
-		fill('red')
-		rect(boxSize * percent_hp, - boxSize / 5, boxSize - boxSize * percent_hp, boxSize / 5)
-		noFill() 
+	else {
+		fill('green');
+		rect(0, - boxSize / 5, boxSize * percent_hp, boxSize / 5);
+		fill('red');
+		rect(boxSize * percent_hp, - boxSize / 5, boxSize - boxSize * percent_hp, boxSize / 5);
+		noFill();
 	}
 }
 
-function preload()  
-{
+function preload() {
 	coreTexture = loadImage('assets/images/core.png');
 	dirtTexture = loadImage('assets/images/dirt.png');
 	goldTexture = loadImage('assets/images/resource.png');
@@ -72,8 +60,7 @@ function preload()
 	font = loadFont('assets/font/Roboto-Regular.ttf');
 }
 
-function setup() 
-{
+function setup() {
 	socket = new WebSocket('ws://{{.socket}}/ws');
 
 	// WebSocket event listeners
@@ -82,17 +69,15 @@ function setup()
 	};
 
 	socket.onmessage = (event) => {
-		if(configPresent)
-		{
-			let jsonString = event.data
+		if(configPresent) {
+			let jsonString = event.data;
 			let sanitizedJsonString = jsonString.replace(invalidCharRegex, '');
 			game = JSON.parse(sanitizedJsonString);
 		}
-		else
-		{
-			let jsonString = event.data
+		else {
+			let jsonString = event.data;
 			let sanitizedJsonString = jsonString.replace(invalidCharRegex, '');
-			config = JSON.parse(sanitizedJsonString)
+			config = JSON.parse(sanitizedJsonString);
 			configPresent = true;
 		}
 	};
@@ -118,8 +103,7 @@ function setup()
 	slider.value(35);
 }
 
-function custom_scale() 
-{
+function custom_scale() {
 	cols = slider.value();
 	rows = slider.value();
 	numFields = slider.value() + 3;
@@ -127,8 +111,7 @@ function custom_scale()
 	boxSize = smallerDimension / numFields - 1;
 }
 
-function draw() 
-{
+function draw() {
 	translate(width/2, height/2); 
 	if (socket.readyState === WebSocket.OPEN && unauthorized) {
 		socket.send('{"id":42}');
@@ -138,106 +121,90 @@ function draw()
 	background(150);
 
   
-	for (let col = 0; col <= cols; col++) 
-	{
-		for (let row = 0; row <= rows; row++) 
-		{
+	for (let col = 0; col <= cols; col++) {
+		for (let row = 0; row <= rows; row++) {
 			let x = col * (boxSize);
 			let y = row * (boxSize);
 			push();
 			translate(x - (cols - 1) * (boxSize) / 2, y - (rows - 1) * (boxSize) / 2, 0);
-			image(dirtTexture, 0, 0, boxSize, boxSize)
+			image(dirtTexture, 0, 0, boxSize, boxSize);
 			translate(0, 0, (boxSize / 2) + 1);
 			pop();
 		}
 	}
 
-	if(game.cores)
-	{
-		for (let core of game.cores) 
-		{
+	if(game.cores) {
+		for (let core of game.cores) {
 			if (core.pos) {
 				factor = (cols * boxSize) / config.width;
-				push()
-				translate(-(boxSize * cols / 2 - boxSize / 2), -(boxSize * cols / 2 - boxSize / 2), 50)
+				push();
+				translate(-(boxSize * cols / 2 - boxSize / 2), -(boxSize * cols / 2 - boxSize / 2), 50);
 				translatex = core.pos.x * factor;
 				translatey = core.pos.y * factor;
 				translate(translatex, translatey, 0);
-				image(coreTexture, 0, 0, boxSize, boxSize)
-				draw_health_bar(core.hp, types.CORE, 1)
-				pop()
+				image(coreTexture, 0, 0, boxSize, boxSize);
+				draw_health_bar(core.hp, types.CORE, 1);
+				pop();
 			}
 		}
 	}
-	if(game.resources)
-	{
-		for (let resource of game.resources) 
-		{
+	if(game.resources) {
+		for (let resource of game.resources) {
 			if(resource.pos) {
 				factor = (cols * boxSize) / config.width;
 				push()
-				translate(-(boxSize * cols / 2 - boxSize / 2), -(boxSize * cols / 2 - boxSize / 2), 50)
+				translate(-(boxSize * cols / 2 - boxSize / 2), -(boxSize * cols / 2 - boxSize / 2), 50);
 				translatex = resource.pos.x * factor;
 				translatey = resource.pos.y * factor;
 				translate(translatex, translatey, 0);
-				image(goldTexture, 0, 0, boxSize, boxSize)
-				draw_health_bar(resource.hp, types.RESOURCE, 1)
-				pop()
+				image(goldTexture, 0, 0, boxSize, boxSize);
+				draw_health_bar(resource.hp, types.RESOURCE, 1);
+				pop();
 			}
 		}
 	}
 
-	if(game.units)
-	{
-		for (let unit of game.units) 
-		{
+	if(game.units) {
+		for (let unit of game.units) {
 			if(unit.pos){
 				factor = (cols * boxSize) / config.width;
-				push()
-				translate(-(boxSize * cols / 2 - boxSize / 2), -(boxSize * cols / 2 - boxSize / 2), 50)
+				push();
+				translate(-(boxSize * cols / 2 - boxSize / 2), -(boxSize * cols / 2 - boxSize / 2), 50);
 				translatex = unit.pos.x * factor;
 				translatey = unit.pos.y * factor;
 				translate(translatex, translatey, 0);
-				if(unit.team_id == 1)
-				{
-					if(unit.type_id == 1)
-					{
-						image(unit_warrior1Texture, 0, 0, boxSize, boxSize)
-						draw_health_bar(unit.hp, types.UNIT, 1)
+				if(unit.team_id == 1) {
+					if(unit.type_id == 1) {
+						image(unit_warrior1Texture, 0, 0, boxSize, boxSize);
+						draw_health_bar(unit.hp, types.UNIT, 1);
 					}
-					else if(unit.type_id == 2)
-					{ 
-						image(unit_miner1Texture, 0, 0, boxSize, boxSize)
-						draw_health_bar(unit.hp, types.UNIT, 2)
+					else if(unit.type_id == 2) { 
+						image(unit_miner1Texture, 0, 0, boxSize, boxSize);
+						draw_health_bar(unit.hp, types.UNIT, 2);
 					}
 				}
-				else if(unit.team_id == 2)
-				{
-					if(unit.type_id == 1)
-					{
-						image(unit_warrior2Texture, 0, 0, boxSize, boxSize)
-						draw_health_bar(unit.hp, types.UNIT, 1)
+				else if(unit.team_id == 2) {
+					if(unit.type_id == 1) {
+						image(unit_warrior2Texture, 0, 0, boxSize, boxSize);
+						draw_health_bar(unit.hp, types.UNIT, 1);
 					}
-					else if(unit.type_id == 2)
-					{
-						image(unit_miner2Texture, 0, 0, boxSize, boxSize)
-						draw_health_bar(unit.hp, types.UNIT, 2)
+					else if(unit.type_id == 2) {
+						image(unit_miner2Texture, 0, 0, boxSize, boxSize);
+						draw_health_bar(unit.hp, types.UNIT, 2);
 					}	
 				}
-				pop()
+				pop();
 			}
 		}
 	}
-	for (let [index, team] of game.teams.entries())
-	{
-		let translate_height =  45 * index
-		text(config.teams[index].name, ((-windowWidth / 2) + (windowWidth / 50)), ((-windowHeight / 2) + (windowHeight / 20)) + translate_height)
-		text(team.balance, ((-windowWidth / 2) + (windowWidth / 50)), ((-windowHeight / 2) + (windowHeight / 20)) + 15 + translate_height)
+	for (let [index, team] of game.teams.entries()) {
+		let translate_height =  45 * index;
+		text(config.teams[index].name, ((-windowWidth / 2) + (windowWidth / 50)), ((-windowHeight / 2) + (windowHeight / 20)) + translate_height);
+		text(team.balance, ((-windowWidth / 2) + (windowWidth / 50)), ((-windowHeight / 2) + (windowHeight / 20)) + 15 + translate_height);
 	}
 }
 
-function windowResized()
-{
+function windowResized() {
 	resizeCanvas(windowWidth, windowHeight);
 	boxSize = min(width, height) / max(cols, rows) - 10;
 }
