@@ -17,7 +17,6 @@ const types = {
 	RESOURCE: 2
 }
 
-
 function draw_health_bar(hp, type, type_id = 1) {
 	let max_health = 0;
 	if(type == types.CORE)
@@ -31,6 +30,7 @@ function draw_health_bar(hp, type, type_id = 1) {
 	else if(type == types.RESOURCE)
 		max_health = 4000;
 	percent_hp = (100 / max_health * hp) / 100;
+	
 	if(type == types.UNIT) {
 		fill('green');
 		rect(0, boxSize - boxSize / 5, boxSize * percent_hp, boxSize / 5);
@@ -119,7 +119,6 @@ function draw() {
 	}
 	custom_scale();
 	background(150);
-
   
 	for (let col = 0; col <= cols; col++) {
 		for (let row = 0; row <= rows; row++) {
@@ -148,6 +147,7 @@ function draw() {
 			}
 		}
 	}
+
 	if(game.resources) {
 		for (let resource of game.resources) {
 			if(resource.pos) {
@@ -173,6 +173,7 @@ function draw() {
 				translatex = unit.pos.x * factor;
 				translatey = unit.pos.y * factor;
 				translate(translatex, translatey, 0);
+
 				if(unit.team_id == 1) {
 					if(unit.type_id == 1) {
 						image(unit_warrior1Texture, 0, 0, boxSize, boxSize);
@@ -183,6 +184,7 @@ function draw() {
 						draw_health_bar(unit.hp, types.UNIT, 2);
 					}
 				}
+
 				else if(unit.team_id == 2) {
 					if(unit.type_id == 1) {
 						image(unit_warrior2Texture, 0, 0, boxSize, boxSize);
@@ -197,6 +199,7 @@ function draw() {
 			}
 		}
 	}
+
 	for (let [index, team] of game.teams.entries()) {
 		let translate_height =  45 * index;
 		text(config.teams[index].name, ((-windowWidth / 2) + (windowWidth / 50)), ((-windowHeight / 2) + (windowHeight / 20)) + translate_height);
