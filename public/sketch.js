@@ -27,7 +27,7 @@ function draw_health_bar(hp, type, type_id = 1)
 	}
 	else if (type == types.UNIT)
 	{
-		for (unit of core.units)
+		for (unit of game.units)
 		{
 			if (unit.type_id == type_id)
 			{
@@ -37,14 +37,25 @@ function draw_health_bar(hp, type, type_id = 1)
 	}
 	else if(type == types.RESOURCE)
 	{
-		max_health = 500
+		max_health = 4000
 	}
 	percent_hp = (100 / max_health * hp) / 100;
-	fill('red')
-	rect(0, -boxSize / 5, boxSize - boxSize * percent_hp, boxSize / 5)
-	fill('green')
-	rect(boxSize - boxSize * percent_hp, -boxSize / 5, boxSize * percent_hp, boxSize / 5)
-	noFill() 
+	if(type == types.UNIT)
+	{
+		fill('green')
+		rect(0, boxSize - boxSize / 5, boxSize * percent_hp, boxSize / 5)
+		fill('red')
+		rect(boxSize * percent_hp, boxSize - boxSize / 5, boxSize - boxSize * percent_hp, boxSize / 5)
+		noFill() 
+	}
+	else 
+	{
+		fill('green')
+		rect(0, - boxSize / 5, boxSize * percent_hp, boxSize / 5)
+		fill('red')
+		rect(boxSize * percent_hp, - boxSize / 5, boxSize - boxSize * percent_hp, boxSize / 5)
+		noFill() 
+	}
 }
 
 function preload()  
@@ -54,8 +65,8 @@ function preload()
 	goldTexture = loadImage('assets/images/resource.png');
 	unit_miner1Texture = loadImage('assets/images/miner_1.png');
 	unit_miner2Texture = loadImage('assets/images/miner_2.png');
-	unit_worker1Texture = loadImage('assets/images/warrior_1.png');
-	unit_worker2Texture = loadImage('assets/images/warrior_2.png');
+	unit_warrior1Texture = loadImage('assets/images/warrior_1.png');
+	unit_warrior2Texture = loadImage('assets/images/warrior_2.png');
 	config = loadJSON('assets/data/config.json');
 	game = loadJSON('assets/data/state.json');
 	font = loadFont('assets/font/Roboto-Regular.ttf');
@@ -191,11 +202,11 @@ function draw()
 				{
 					if(unit.type_id == 1)
 					{
-						image(unit_miner1Texture, 0, 0, boxSize, boxSize, 0, 0, boxSize, boxSize)
+						image(unit_warrior1Texture, 0, 0, boxSize, boxSize)
 						draw_health_bar(unit.hp, types.UNIT, 1)
 					}
 					else if(unit.type_id == 2)
-					{
+					{ 
 						image(unit_miner1Texture, 0, 0, boxSize, boxSize)
 						draw_health_bar(unit.hp, types.UNIT, 2)
 					}
@@ -204,12 +215,12 @@ function draw()
 				{
 					if(unit.type_id == 1)
 					{
-						image(unit_miner2Texture, 0, 0, boxSize, boxSize)
+						image(unit_warrior2Texture, 0, 0, boxSize, boxSize)
 						draw_health_bar(unit.hp, types.UNIT, 1)
 					}
 					else if(unit.type_id == 2)
 					{
-						image(unit_worker2Texture, 0, 0, boxSize, boxSize)
+						image(unit_miner2Texture, 0, 0, boxSize, boxSize)
 						draw_health_bar(unit.hp, types.UNIT, 2)
 					}	
 				}
