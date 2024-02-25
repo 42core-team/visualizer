@@ -44,7 +44,7 @@ func HandleWebSocket(con *websocket.Conn) {
 
 	go func() {
 		for {
-			msgSocket := make([]byte, 4096)
+			msgSocket := make([]byte, 100000)
 
 			_, err = socket.ReadFromSocket(socketCon, &msgSocket)
 			if err != nil {
