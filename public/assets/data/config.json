@@ -33,7 +33,7 @@
 			"hp": 400,
 			"dmg_core": 100,
 			"dmg_unit": 50,
-			"dmg_resouce": 200,
+			"dmg_resouce": 2000,
 			"max_range": 3,
 			"min_range": 3,
 			"speed": 50
