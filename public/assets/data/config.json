@@ -1,42 +1,50 @@
 {
-	"width": 30000,
-	"height": 30000,
+	"id": 1,
+	"height": 10000,
+	"width": 10000,
 	"idle_income": 20,
-	"core_hp": 10000,
-	"teams": [
-		{ 
-			"id": 1,
-			"name": "Team 1"
-		},
-		{ 
-			"id": 2,
-			"name": "Team 2"
-		}
-	],
+	"core_hp": 25000,
 	"units": [
 		{
 			"name": "Warrior",
 			"type_id": 1,
-			"cost": 100,
-			"hp": 400,
-			"dmg_core": 100,
-			"dmg_unit": 50,
-			"dmg_resouce": 200,
-			"max_range": 3,
-			"min_range": 3,
-			"speed": 50
+			"cost": 350,
+			"hp": 3000,
+			"dmg_core": 1000,
+			"dmg_unit": 500,
+			"dmg_resource": 500,
+			"max_range": 500,
+			"min_range": 0,
+			"speed": 500
 		},
 		{
 			"name": "Worker",
 			"type_id": 2,
-			"cost": 100,
-			"hp": 400,
-			"dmg_core": 100,
-			"dmg_unit": 50,
-			"dmg_resouce": 2000,
-			"max_range": 3,
-			"min_range": 3,
-			"speed": 50
+			"cost": 150,
+			"hp": 1500,
+			"dmg_core": 500,
+			"dmg_unit": 250,
+			"dmg_resource": 2000,
+			"max_range": 250,
+			"min_range": 0,
+			"speed": 700
+		}
+	],
+	"teams": [
+		{
+			"id": 1,
+			"name": "Team 1"
+		},
+		{
+			"id": 2,
+			"name": "Team 2"
+		}
+	],
+	"resources": [
+		{
+			"type_id": 1,
+			"hp": 10000,
+			"balance_value": 150
 		}
 	]
 }

@@ -22,15 +22,15 @@ function draw_health_bar(hp, type, type_id = 1) {
 	if(type == types.CORE)
 		max_health = config.core_hp;
 	else if (type == types.UNIT) {
-		for (unit of game.units) {
+		for (unit of config.units) {
 			if (unit.type_id == type_id)
 				max_health = unit.hp;
 		}
 	}
 	else if(type == types.RESOURCE)
-		max_health = 4000;
+		max_health = config.resources[0].hp;
 	percent_hp = (100 / max_health * hp) / 100;
-	
+
 	if(type == types.UNIT) {
 		fill('green');
 		rect(0, boxSize - boxSize / 5, boxSize * percent_hp, boxSize / 5);
@@ -88,7 +88,7 @@ function setup() {
 
 	socket.onclose = () => {
 		console.log('WebSocket connection closed');
-	};	
+	};
 
 	cols = config.width / 1000;
 	rows = config.height / 1000;
@@ -112,14 +112,14 @@ function custom_scale() {
 }
 
 function draw() {
-	translate(width/2, height/2); 
+	translate(width/2, height/2);
 	if (socket.readyState === WebSocket.OPEN && unauthorized) {
 		socket.send('{"id":42}');
 		unauthorized = false;
 	}
 	custom_scale();
 	background(150);
-  
+
 	for (let col = 0; col <= cols; col++) {
 		for (let row = 0; row <= rows; row++) {
 			let x = col * (boxSize);
@@ -179,7 +179,7 @@ function draw() {
 						image(unit_warrior1Texture, 0, 0, boxSize, boxSize);
 						draw_health_bar(unit.hp, types.UNIT, 1);
 					}
-					else if(unit.type_id == 2) { 
+					else if(unit.type_id == 2) {
 						image(unit_miner1Texture, 0, 0, boxSize, boxSize);
 						draw_health_bar(unit.hp, types.UNIT, 2);
 					}
@@ -193,7 +193,7 @@ function draw() {
 					else if(unit.type_id == 2) {
 						image(unit_miner2Texture, 0, 0, boxSize, boxSize);
 						draw_health_bar(unit.hp, types.UNIT, 2);
-					}	
+					}
 				}
 				pop();
 			}
