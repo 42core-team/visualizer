@@ -17,7 +17,7 @@ func main() {
 		socketServer := env.GetEnv("HOST", "127.0.0.1:3000")
 
 		// Parse the JavaScript file as a template
-		tmpl, err := template.ParseFiles("public/sketch.js")
+		tmpl, err := template.ParseFiles("../public/sketch.js")
 		if err != nil {
 			return err
 		}
@@ -32,7 +32,7 @@ func main() {
 
 		return c.SendStatus(fiber.StatusOK)
 	})
-	app.Static("/", "public")
+	app.Static("/", "../public")
 
 	app.Use("/ws", func(c *fiber.Ctx) error {
 		// IsWebSocketUpgrade returns true if the client
