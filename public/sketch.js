@@ -28,7 +28,7 @@ function draw_health_bar(hp, type, type_id = 1) {
 		}
 	}
 	else if(type == types.RESOURCE)
-		max_health = 4000;
+		max_health = config.resources[0].hp;
 	percent_hp = (100 / max_health * hp) / 100;
 
 	if(type == types.UNIT) {
