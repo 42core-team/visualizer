@@ -1,8 +1,10 @@
 package websockethandler
 
 import (
+	"bytes"
 	"core/visualizer/socket"
 	"log"
+	"strings"
 
 	"github.com/gofiber/contrib/websocket"
 )
@@ -44,15 +46,29 @@ func HandleWebSocket(con *websocket.Conn) {
 
 	go func() {
 		for {
-			msgSocket := make([]byte, 100000)
+			var buf bytes.Buffer
+			tmp := make([]byte, 2048) // temporary buffer
 
-			_, err = socket.ReadFromSocket(socketCon, &msgSocket)
-			if err != nil {
-				log.Println("socket read:", err)
-				break
+			for {
+				n, err := socket.ReadFromSocket(socketCon, &tmp)
+				if err != nil {
+					log.Println("socket read:", err)
+					return
+				}
+				buf.Write(tmp[:n]) // write the data to the buffer
+				if strings.HasSuffix(buf.String(), "\n") {
+					break
+				}
 			}
 
-			if err = con.WriteMessage(mt, msgSocket); err != nil {
+			lines := strings.Split(buf.String(), "\n")
+			len_lines := len(lines)
+			lastLine := lines[0]
+			if len_lines > 1 {
+				lastLine = lines[len_lines-2]
+			}
+
+			if err = con.WriteMessage(mt, []byte(lastLine)); err != nil {
 				log.Println("write:", err)
 				break
 			}
