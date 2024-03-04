@@ -72,7 +72,12 @@ function setup() {
 		if(configPresent) {
 			let jsonString = event.data;
 			let sanitizedJsonString = jsonString.replace(invalidCharRegex, '');
-			game = JSON.parse(sanitizedJsonString);
+			try {
+				game = JSON.parse(sanitizedJsonString);
+			} catch (error) {
+				console.error('Failed to parse JSON:', sanitizedJsonString);
+				console.error('Error:', error);
+			}
 		}
 		else {
 			let jsonString = event.data;
