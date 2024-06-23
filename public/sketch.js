@@ -11,6 +11,8 @@ let configPresent = false
 let invalidCharRegex = /[\u0000-\u001F\u007F-\u009F]/g;
 let font;
 
+let lastPacket = {};
+
 const types = {
 	CORE: 0,
 	UNIT: 1,
@@ -18,33 +20,41 @@ const types = {
 }
 
 function draw_health_bar(hp, type, type_id = 1) {
+
 	let max_health = 0;
+
 	if(type == types.CORE)
 		max_health = config.core_hp;
-	else if (type == types.UNIT) {
-		for (unit of config.units) {
+	else if (type == types.UNIT)
+	{
+		for (unit of config.units)
+		{
 			if (unit.type_id == type_id)
 				max_health = unit.hp;
 		}
 	}
 	else if(type == types.RESOURCE)
 		max_health = config.resources[0].hp;
+
 	percent_hp = (100 / max_health * hp) / 100;
 
-	if(type == types.UNIT) {
+	if(type == types.UNIT)
+	{
 		fill('green');
 		rect(0, boxSize - boxSize / 5, boxSize * percent_hp, boxSize / 5);
 		fill('red');
 		rect(boxSize * percent_hp, boxSize - boxSize / 5, boxSize - boxSize * percent_hp, boxSize / 5);
 		noFill();
 	}
-	else {
+	else
+	{
 		fill('green');
 		rect(0, - boxSize / 5, boxSize * percent_hp, boxSize / 5);
 		fill('red');
 		rect(boxSize * percent_hp, - boxSize / 5, boxSize - boxSize * percent_hp, boxSize / 5);
 		noFill();
 	}
+
 }
 
 function preload() {
@@ -116,17 +126,12 @@ function custom_scale() {
 	boxSize = smallerDimension / numFields - 1;
 }
 
-function draw() {
-	translate(width/2, height/2);
-	if (socket.readyState === WebSocket.OPEN && unauthorized) {
-		socket.send('{"id":42}');
-		unauthorized = false;
-	}
-	custom_scale();
-	background(150);
+function draw_grid() {
 
-	for (let col = 0; col <= cols; col++) {
-		for (let row = 0; row <= rows; row++) {
+	for (let col = 0; col <= cols; col++)
+	{
+		for (let row = 0; row <= rows; row++)
+		{
 			let x = col * (boxSize);
 			let y = row * (boxSize);
 			push();
@@ -137,9 +142,25 @@ function draw() {
 		}
 	}
 
-	if(game.cores) {
-		for (let core of game.cores) {
-			if (core.pos) {
+}
+
+function draw_cores() {
+
+	if(game.cores)
+	{
+	
+		console.info("Drawing cores...");
+
+		if (game.cores.length == 1)
+		{
+			console.log("One Core left!");
+			alert(game.teams[game.cores[0].team_id - 1].name + " has won the game!");
+		}
+
+		for (let core of game.cores)
+		{
+			if (core.pos)
+			{
 				factor = (cols * boxSize) / config.width;
 				push();
 				translate(-(boxSize * cols / 2 - boxSize / 2), -(boxSize * cols / 2 - boxSize / 2), 50);
@@ -152,10 +173,21 @@ function draw() {
 			}
 		}
 	}
+	else console.log("No cores on the map");
 
-	if(game.resources) {
-		for (let resource of game.resources) {
-			if(resource.pos) {
+}
+
+function draw_resources() {
+
+	if(game.resources)
+	{
+
+		console.info("Drawing resources...");
+
+		for (let resource of game.resources)
+		{
+			if(resource.pos)
+			{
 				factor = (cols * boxSize) / config.width;
 				push()
 				translate(-(boxSize * cols / 2 - boxSize / 2), -(boxSize * cols / 2 - boxSize / 2), 50);
@@ -168,10 +200,20 @@ function draw() {
 			}
 		}
 	}
+	else console.log("No resources on the map");
+}
 
-	if(game.units) {
-		for (let unit of game.units) {
-			if(unit.pos){
+function draw_units() {
+
+	if(game.units)
+	{
+
+		console.info("Drawing units...");
+
+		for (let unit of game.units)
+		{
+			if(unit.pos)
+			{
 				factor = (cols * boxSize) / config.width;
 				push();
 				translate(-(boxSize * cols / 2 - boxSize / 2), -(boxSize * cols / 2 - boxSize / 2), 50);
@@ -179,23 +221,29 @@ function draw() {
 				translatey = unit.pos.y * factor;
 				translate(translatex, translatey, 0);
 
-				if(unit.team_id == 1) {
-					if(unit.type_id == 1) {
+				if(unit.team_id == 1)
+				{
+					if(unit.type_id == 1)
+					{
 						image(unit_warrior1Texture, 0, 0, boxSize, boxSize);
 						draw_health_bar(unit.hp, types.UNIT, 1);
 					}
-					else if(unit.type_id == 2) {
+					else if(unit.type_id == 2)
+					{
 						image(unit_miner1Texture, 0, 0, boxSize, boxSize);
 						draw_health_bar(unit.hp, types.UNIT, 2);
 					}
 				}
 
-				else if(unit.team_id == 2) {
-					if(unit.type_id == 1) {
+				else if(unit.team_id == 2)
+				{
+					if(unit.type_id == 1)
+					{
 						image(unit_warrior2Texture, 0, 0, boxSize, boxSize);
 						draw_health_bar(unit.hp, types.UNIT, 1);
 					}
-					else if(unit.type_id == 2) {
+					else if(unit.type_id == 2)
+					{
 						image(unit_miner2Texture, 0, 0, boxSize, boxSize);
 						draw_health_bar(unit.hp, types.UNIT, 2);
 					}
@@ -204,12 +252,57 @@ function draw() {
 			}
 		}
 	}
+	else console.log("No units on the map");
+}
 
+function draw_team_information()
+{
 	for (let [index, team] of game.teams.entries()) {
+		console.log("team: ", team);
 		let translate_height =  45 * index;
 		text(config.teams[index].name, ((-windowWidth / 2) + (windowWidth / 50)), ((-windowHeight / 2) + (windowHeight / 20)) + translate_height);
 		text(team.balance, ((-windowWidth / 2) + (windowWidth / 50)), ((-windowHeight / 2) + (windowHeight / 20)) + 15 + translate_height);
 	}
+
+}
+
+function draw_resources_feed()
+{
+	let translate_height =  45 * game.teams.length;
+	text("Resources", ((-windowWidth / 2) + (windowWidth / 50)), ((-windowHeight / 2) + (windowHeight / 20)) + translate_height);
+	text(game.resources.length, ((-windowWidth / 2) + (windowWidth / 50)), ((-windowHeight / 2) + (windowHeight / 20)) + 15 + translate_height);
+}
+
+function draw_unit_feed()
+{
+	let translate_height =  45 * (game.teams.length + 1);
+	text("Units", ((-windowWidth / 2) + (windowWidth / 50)), ((-windowHeight / 2) + (windowHeight / 20)) + translate_height);
+	text(game.units.length, ((-windowWidth / 2) + (windowWidth / 50)), ((-windowHeight / 2) + (windowHeight / 20)) + 15 + translate_height);
+}
+
+function draw() {
+
+	translate(width / 2, height / 2);
+	if (socket.readyState === WebSocket.OPEN && unauthorized) {
+		socket.send('{"id":42}');
+		unauthorized = false;
+	}
+	custom_scale();
+	background(150);
+
+	// draw playing field and its elements
+	draw_grid();
+	draw_cores();
+	draw_resources();
+	draw_units();
+	
+
+	// draw team information
+	draw_team_information();
+	draw_unit_feed();
+	draw_resources_feed();
+
+	lastPacket = game;
 }
 
 function windowResized() {

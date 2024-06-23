@@ -33,11 +33,11 @@
 	"teams": [
 		{
 			"id": 1,
-			"name": "Team 1"
+			"name": "Starlord"
 		},
 		{
 			"id": 2,
-			"name": "Team 2"
+			"name": "Steven"
 		}
 	],
 	"resources": [
