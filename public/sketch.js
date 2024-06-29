@@ -11,6 +11,7 @@ let configPresent = false
 let invalidCharRegex = /[\u0000-\u001F\u007F-\u009F]/g;
 let font;
 
+let isGameOver = false;
 let lastPacket = {};
 
 const types = {
@@ -154,7 +155,13 @@ function draw_cores() {
 		if (game.cores.length == 1)
 		{
 			console.log("One Core left!");
-			alert(game.teams[game.cores[0].team_id - 1].name + " has won the game!");
+			console.log("Team ID: ", game.cores[0].team_id);
+			if (game.cores[0].team_id == 1)
+				alert(game.teams[0].name + "(red) has won the game!");
+			else if (game.cores[0].team_id == 2)
+				alert(game.teams[1].name + "(blue) has won the game!");
+			else alert("Game is over!");
+			isGameOver = true;
 		}
 
 		for (let core of game.cores)
@@ -173,7 +180,13 @@ function draw_cores() {
 			}
 		}
 	}
-	else console.log("No cores on the map");
+	else
+	{
+		console.log("No cores on the map");
+		if (lastPacket.game.cores.length >= 2)
+			alert("No cores left! The game is a draw!");
+		isGameOver = true;
+	}
 
 }
 
@@ -282,11 +295,16 @@ function draw_unit_feed()
 
 function draw() {
 
-	translate(width / 2, height / 2);
-	if (socket.readyState === WebSocket.OPEN && unauthorized) {
-		socket.send('{"id":42}');
-		unauthorized = false;
+	if(isGameOver)
+	{
+		return;
 	}
+
+	translate(width / 2, height / 2);
+	// if (socket.readyState === WebSocket.OPEN && unauthorized) {
+	//	socket.send('{"id":42}');
+	//	unauthorized = false;
+	// }
 	custom_scale();
 	background(150);
 
