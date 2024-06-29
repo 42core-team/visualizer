@@ -77,6 +77,7 @@ function setup() {
 	// WebSocket event listeners
 	socket.onopen = () => {
 		console.log('WebSocket connection established');
+		socket.send('{"id":42}');
 	};
 
 	socket.onmessage = (event) => {
@@ -273,8 +274,8 @@ function draw_team_information()
 	for (let [index, team] of game.teams.entries()) {
 		console.log("team: ", team);
 		let translate_height =  45 * index;
-		text(config.teams[index].name, ((-windowWidth / 2) + (windowWidth / 50)), ((-windowHeight / 2) + (windowHeight / 20)) + translate_height);
-		text(team.balance, ((-windowWidth / 2) + (windowWidth / 50)), ((-windowHeight / 2) + (windowHeight / 20)) + 15 + translate_height);
+		text("Team: " + config.teams[index].name, ((-windowWidth / 2) + (windowWidth / 50)), ((-windowHeight / 2) + (windowHeight / 20)) + translate_height);
+		text("Balance: " + team.balance, ((-windowWidth / 2) + (windowWidth / 50)), ((-windowHeight / 2) + (windowHeight / 20)) + 15 + translate_height);
 	}
 
 }
