@@ -147,24 +147,19 @@ function draw_grid() {
 }
 
 function draw_cores() {
-
+	if (game.status == 2)
+	{
+		console.log("Game over!");
+		if (game.cores[0].team_id == 1)
+			alert("blue team wins!");
+		else
+			alert("red team wins!");
+		isGameOver = true;
+		return;
+	}
+	
 	if(game.cores)
 	{
-	
-		console.info("Drawing cores...");
-
-		if (game.cores.length == 1)
-		{
-			console.log("One Core left!");
-			console.log("Team ID: ", game.cores[0].team_id);
-			if (game.cores[0].team_id == 1)
-				alert(game.teams[0].name + "(red) has won the game!");
-			else if (game.cores[0].team_id == 2)
-				alert(game.teams[1].name + "(blue) has won the game!");
-			else alert("Game is over!");
-			isGameOver = true;
-		}
-
 		for (let core of game.cores)
 		{
 			if (core.pos)
@@ -183,7 +178,6 @@ function draw_cores() {
 	}
 	else
 	{
-		console.log("No cores on the map");
 		if (lastPacket.game.cores.length >= 2)
 			alert("No cores left! The game is a draw!");
 		isGameOver = true;
@@ -195,9 +189,6 @@ function draw_resources() {
 
 	if(game.resources)
 	{
-
-		console.info("Drawing resources...");
-
 		for (let resource of game.resources)
 		{
 			if(resource.pos)
@@ -214,16 +205,12 @@ function draw_resources() {
 			}
 		}
 	}
-	else console.log("No resources on the map");
 }
 
 function draw_units() {
 
 	if(game.units)
 	{
-
-		console.info("Drawing units...");
-
 		for (let unit of game.units)
 		{
 			if(unit.pos)
@@ -266,13 +253,11 @@ function draw_units() {
 			}
 		}
 	}
-	else console.log("No units on the map");
 }
 
 function draw_team_information()
 {
 	for (let [index, team] of game.teams.entries()) {
-		console.log("team: ", team);
 		let translate_height =  45 * index;
 		text("Team: " + config.teams[index].name, ((-windowWidth / 2) + (windowWidth / 50)), ((-windowHeight / 2) + (windowHeight / 20)) + translate_height);
 		text("Balance: " + team.balance, ((-windowWidth / 2) + (windowWidth / 50)), ((-windowHeight / 2) + (windowHeight / 20)) + 15 + translate_height);
