@@ -188,14 +188,33 @@ function draw_resources() {
 	}
 }
 
+function calc_distance(x1, y1, x2, y2) {
+	return Math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2);
+}
+
 function draw_units() {
+	factor = (cols * boxSize) / config.width;
 	if (game.units) {
+		let unitsInOnePlace = [];
 		for (let unit of game.units) {
 			if (unit.pos) {
-				factor = (cols * boxSize) / config.width;
 
 				x = unit.pos.x * factor;
 				y = unit.pos.y * factor;
+
+				exists = false;
+				for (let unitInOnePlace of unitsInOnePlace) {
+					distance = calc_distance(unitInOnePlace.x, unitInOnePlace.y, unit.pos.x, unit.pos.y);
+					if (distance < 50) {
+						unitInOnePlace.units.push(unit);
+						unitInOnePlace.count++;
+						exists = true;
+						break;
+					}
+				}
+				if (!exists) {
+					unitsInOnePlace.push({ x: unit.pos.x, y: unit.pos.y, count: 1, units: [unit] });
+				}
 
 				exists = false;
 				for (let pos of currentPos) {
@@ -210,7 +229,7 @@ function draw_units() {
 					}
 				}
 				if (!exists) {
-					currentPos.push({id: unit.id, x: x, y: y});
+					currentPos.push({ id: unit.id, x: x, y: y });
 				}
 
 				push();
@@ -237,6 +256,40 @@ function draw_units() {
 					}
 				}
 				pop();
+			}
+		}
+
+		for (let unitInOnePlace of unitsInOnePlace) {
+			if (unitInOnePlace.count > 1) {
+				for (let pos of currentPos) {
+					if (pos.id == unitInOnePlace.units[0].id) {
+						if (unitInOnePlace.units[0].team_id == 1) {
+							push();
+							translate(-(boxSize * cols / 2 - boxSize / 2), -(boxSize * cols / 2 - boxSize / 2), 50);
+							translate(pos.x, pos.y, 0);
+							fill('blue');
+							circle(0, 0, boxSize / 2);
+							fill('white');
+							textAlign(CENTER, CENTER);
+							textSize(boxSize / 3);
+							text(unitInOnePlace.count, 0, 0);
+							pop();
+							break;
+						} else if (unitInOnePlace.units[0].team_id == 2) {
+							push();
+							translate(-(boxSize * cols / 2 - boxSize / 2), -(boxSize * cols / 2 - boxSize / 2), 50);
+							translate(pos.x, pos.y, 0);
+							fill('red');
+							circle(0, 0, boxSize / 2);
+							fill('white');
+							textAlign(CENTER, CENTER);
+							textSize(boxSize / 3);
+							text(unitInOnePlace.count, 0, 0);
+							pop();
+							break;
+						}
+					}
+				}
 			}
 		}
 	}
