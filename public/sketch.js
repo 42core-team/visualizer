@@ -267,7 +267,7 @@ function draw_units() {
 						if (unitInOnePlace.units[0].team_id == 1) {
 							push();
 							translate(-(boxSize * cols / 2 - boxSize / 2), -(boxSize * cols / 2 - boxSize / 2), 50);
-							translate(pos.x, pos.y, 0);
+							translate(pos.x, pos.y + boxSize / 4, 0);
 							fill('blue');
 							circle(0, 0, boxSize / 2);
 							fill('white');
@@ -278,7 +278,7 @@ function draw_units() {
 						} else if (unitInOnePlace.units[0].team_id == 2) {
 							push();
 							translate(-(boxSize * cols / 2 - boxSize / 2), -(boxSize * cols / 2 - boxSize / 2), 50);
-							translate(pos.x + boxSize, pos.y, 0);
+							translate(pos.x + boxSize, pos.y + boxSize / 4, 0);
 							fill('red');
 							circle(0, 0, boxSize / 2);
 							fill('white');
