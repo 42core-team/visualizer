@@ -85,6 +85,7 @@ function setup() {
 				console.error('Failed to parse JSON:', sanitizedJsonString);
 				console.error('Error:', error);
 			}
+			game.units.sort((a, b) => a.hp + b.hp);
 		}
 		else {
 			let jsonString = event.data;
@@ -205,7 +206,7 @@ function draw_units() {
 				exists = false;
 				for (let unitInOnePlace of unitsInOnePlace) {
 					distance = calc_distance(unitInOnePlace.x, unitInOnePlace.y, unit.pos.x, unit.pos.y);
-					if (distance < 50) {
+					if (distance < 50 && unitInOnePlace.units[0].team_id == unit.team_id) {
 						unitInOnePlace.units.push(unit);
 						unitInOnePlace.count++;
 						exists = true;
