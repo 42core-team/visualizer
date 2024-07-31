@@ -13,6 +13,7 @@ let font;
 
 let isGameOver = false;
 let lastPacket = {};
+let currentPos = [];
 
 const types = {
 	CORE: 0,
@@ -192,11 +193,29 @@ function draw_units() {
 		for (let unit of game.units) {
 			if (unit.pos) {
 				factor = (cols * boxSize) / config.width;
+
+				x = unit.pos.x * factor;
+				y = unit.pos.y * factor;
+
+				exists = false;
+				for (let pos of currentPos) {
+					if (pos.id == unit.id) {
+						x = lerp(pos.x, x, 0.3);
+						y = lerp(pos.y, y, 0.3);
+						pos.x = x;
+						pos.y = y;
+
+						exists = true;
+						break;
+					}
+				}
+				if (!exists) {
+					currentPos.push({id: unit.id, x: x, y: y});
+				}
+
 				push();
 				translate(-(boxSize * cols / 2 - boxSize / 2), -(boxSize * cols / 2 - boxSize / 2), 50);
-				translatex = unit.pos.x * factor;
-				translatey = unit.pos.y * factor;
-				translate(translatex, translatey, 0);
+				translate(x, y, 0);
 
 				if (unit.team_id == 1) {
 					if (unit.type_id == 1) {
