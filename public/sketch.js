@@ -104,7 +104,7 @@ function setup() {
 
 	cols = config.width / 1000;
 	rows = config.height / 1000;
-	frameRate(30);
+	// frameRate(30);
 	createCanvas(windowWidth, windowHeight);
 	noStroke();
 	background(220);
