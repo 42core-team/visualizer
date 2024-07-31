@@ -21,7 +21,6 @@ const types = {
 }
 
 function draw_health_bar(hp, type, type_id = 1) {
-
 	let max_health = 0;
 
 	if (type == types.CORE)
@@ -51,7 +50,6 @@ function draw_health_bar(hp, type, type_id = 1) {
 		rect(boxSize * percent_hp, - boxSize / 5, boxSize - boxSize * percent_hp, boxSize / 5);
 		noFill();
 	}
-
 }
 
 function preload() {
@@ -125,7 +123,6 @@ function custom_scale() {
 }
 
 function draw_grid() {
-
 	for (let col = 0; col <= cols; col++) {
 		for (let row = 0; row <= rows; row++) {
 			let x = col * (boxSize);
@@ -137,7 +134,6 @@ function draw_grid() {
 			pop();
 		}
 	}
-
 }
 
 function draw_cores() {
@@ -171,11 +167,9 @@ function draw_cores() {
 			alert("No cores left! The game is a draw!");
 		isGameOver = true;
 	}
-
 }
 
 function draw_resources() {
-
 	if (game.resources) {
 		for (let resource of game.resources) {
 			if (resource.pos) {
@@ -194,7 +188,6 @@ function draw_resources() {
 }
 
 function draw_units() {
-
 	if (game.units) {
 		for (let unit of game.units) {
 			if (unit.pos) {
@@ -214,9 +207,7 @@ function draw_units() {
 						image(unit_miner1Texture, 0, 0, boxSize, boxSize);
 						draw_health_bar(unit.hp, types.UNIT, 2);
 					}
-				}
-
-				else if (unit.team_id == 2) {
+				} else if (unit.team_id == 2) {
 					if (unit.type_id == 1) {
 						image(unit_warrior2Texture, 0, 0, boxSize, boxSize);
 						draw_health_bar(unit.hp, types.UNIT, 1);
@@ -238,7 +229,6 @@ function draw_team_information() {
 		text("Team: " + config.teams[index].name, ((-windowWidth / 2) + (windowWidth / 50)), ((-windowHeight / 2) + (windowHeight / 20)) + translate_height);
 		text("Balance: " + team.balance, ((-windowWidth / 2) + (windowWidth / 50)), ((-windowHeight / 2) + (windowHeight / 20)) + 15 + translate_height);
 	}
-
 }
 
 function draw_resources_feed() {
@@ -254,7 +244,6 @@ function draw_unit_feed() {
 }
 
 function draw() {
-
 	if (isGameOver) {
 		return;
 	}
