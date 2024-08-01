@@ -13,6 +13,7 @@ let font;
 
 let isGameOver = false;
 let lastPacket = {};
+let currentPos = [];
 
 const types = {
 	CORE: 0,
@@ -21,41 +22,35 @@ const types = {
 }
 
 function draw_health_bar(hp, type, type_id = 1) {
-
 	let max_health = 0;
 
-	if(type == types.CORE)
+	if (type == types.CORE)
 		max_health = config.core_hp;
-	else if (type == types.UNIT)
-	{
-		for (unit of config.units)
-		{
+	else if (type == types.UNIT) {
+		for (unit of config.units) {
 			if (unit.type_id == type_id)
 				max_health = unit.hp;
 		}
 	}
-	else if(type == types.RESOURCE)
+	else if (type == types.RESOURCE)
 		max_health = config.resources[0].hp;
 
 	percent_hp = (100 / max_health * hp) / 100;
 
-	if(type == types.UNIT)
-	{
+	if (type == types.UNIT) {
 		fill('green');
 		rect(0, boxSize - boxSize / 5, boxSize * percent_hp, boxSize / 5);
 		fill('red');
 		rect(boxSize * percent_hp, boxSize - boxSize / 5, boxSize - boxSize * percent_hp, boxSize / 5);
 		noFill();
 	}
-	else
-	{
+	else {
 		fill('green');
 		rect(0, - boxSize / 5, boxSize * percent_hp, boxSize / 5);
 		fill('red');
 		rect(boxSize * percent_hp, - boxSize / 5, boxSize - boxSize * percent_hp, boxSize / 5);
 		noFill();
 	}
-
 }
 
 function preload() {
@@ -81,7 +76,7 @@ function setup() {
 	};
 
 	socket.onmessage = (event) => {
-		if(configPresent) {
+		if (configPresent) {
 			let jsonString = event.data;
 			let sanitizedJsonString = jsonString.replace(invalidCharRegex, '');
 			try {
@@ -90,6 +85,7 @@ function setup() {
 				console.error('Failed to parse JSON:', sanitizedJsonString);
 				console.error('Error:', error);
 			}
+			game.units.sort((a, b) => a.hp + b.hp);
 		}
 		else {
 			let jsonString = event.data;
@@ -109,7 +105,7 @@ function setup() {
 
 	cols = config.width / 1000;
 	rows = config.height / 1000;
-	frameRate(30);
+	// frameRate(30);
 	createCanvas(windowWidth, windowHeight);
 	noStroke();
 	background(220);
@@ -129,11 +125,8 @@ function custom_scale() {
 }
 
 function draw_grid() {
-
-	for (let col = 0; col <= cols; col++)
-	{
-		for (let row = 0; row <= rows; row++)
-		{
+	for (let col = 0; col <= cols; col++) {
+		for (let row = 0; row <= rows; row++) {
 			let x = col * (boxSize);
 			let y = row * (boxSize);
 			push();
@@ -143,12 +136,10 @@ function draw_grid() {
 			pop();
 		}
 	}
-
 }
 
 function draw_cores() {
-	if (game.status == 2)
-	{
+	if (game.status == 2) {
 		console.log("Game over!");
 		if (game.cores[0].team_id == 1)
 			alert("blue team wins!");
@@ -157,13 +148,10 @@ function draw_cores() {
 		isGameOver = true;
 		return;
 	}
-	
-	if(game.cores)
-	{
-		for (let core of game.cores)
-		{
-			if (core.pos)
-			{
+
+	if (game.cores) {
+		for (let core of game.cores) {
+			if (core.pos) {
 				factor = (cols * boxSize) / config.width;
 				push();
 				translate(-(boxSize * cols / 2 - boxSize / 2), -(boxSize * cols / 2 - boxSize / 2), 50);
@@ -176,23 +164,17 @@ function draw_cores() {
 			}
 		}
 	}
-	else
-	{
+	else {
 		if (lastPacket.game.cores.length >= 2)
 			alert("No cores left! The game is a draw!");
 		isGameOver = true;
 	}
-
 }
 
 function draw_resources() {
-
-	if(game.resources)
-	{
-		for (let resource of game.resources)
-		{
-			if(resource.pos)
-			{
+	if (game.resources) {
+		for (let resource of game.resources) {
+			if (resource.pos) {
 				factor = (cols * boxSize) / config.width;
 				push()
 				translate(-(boxSize * cols / 2 - boxSize / 2), -(boxSize * cols / 2 - boxSize / 2), 50);
@@ -207,44 +189,69 @@ function draw_resources() {
 	}
 }
 
-function draw_units() {
+function calc_distance(x1, y1, x2, y2) {
+	return Math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2);
+}
 
-	if(game.units)
-	{
-		for (let unit of game.units)
-		{
-			if(unit.pos)
-			{
-				factor = (cols * boxSize) / config.width;
+function draw_units() {
+	factor = (cols * boxSize) / config.width;
+	if (game.units) {
+		let unitsInOnePlace = [];
+		for (let unit of game.units) {
+			if (unit.pos) {
+
+				x = unit.pos.x * factor;
+				y = unit.pos.y * factor;
+
+				exists = false;
+				for (let unitInOnePlace of unitsInOnePlace) {
+					distance = calc_distance(unitInOnePlace.x, unitInOnePlace.y, unit.pos.x, unit.pos.y);
+					if (distance < 50 && unitInOnePlace.units[0].team_id == unit.team_id) {
+						unitInOnePlace.units.push(unit);
+						unitInOnePlace.count++;
+						exists = true;
+						break;
+					}
+				}
+				if (!exists) {
+					unitsInOnePlace.push({ x: unit.pos.x, y: unit.pos.y, count: 1, units: [unit] });
+				}
+
+				exists = false;
+				for (let pos of currentPos) {
+					if (pos.id == unit.id) {
+						x = lerp(pos.x, x, 0.3);
+						y = lerp(pos.y, y, 0.3);
+						pos.x = x;
+						pos.y = y;
+
+						exists = true;
+						break;
+					}
+				}
+				if (!exists) {
+					currentPos.push({ id: unit.id, x: x, y: y });
+				}
+
 				push();
 				translate(-(boxSize * cols / 2 - boxSize / 2), -(boxSize * cols / 2 - boxSize / 2), 50);
-				translatex = unit.pos.x * factor;
-				translatey = unit.pos.y * factor;
-				translate(translatex, translatey, 0);
+				translate(x, y, 0);
 
-				if(unit.team_id == 1)
-				{
-					if(unit.type_id == 1)
-					{
+				if (unit.team_id == 1) {
+					if (unit.type_id == 1) {
 						image(unit_warrior1Texture, 0, 0, boxSize, boxSize);
 						draw_health_bar(unit.hp, types.UNIT, 1);
 					}
-					else if(unit.type_id == 2)
-					{
+					else if (unit.type_id == 2) {
 						image(unit_miner1Texture, 0, 0, boxSize, boxSize);
 						draw_health_bar(unit.hp, types.UNIT, 2);
 					}
-				}
-
-				else if(unit.team_id == 2)
-				{
-					if(unit.type_id == 1)
-					{
+				} else if (unit.team_id == 2) {
+					if (unit.type_id == 1) {
 						image(unit_warrior2Texture, 0, 0, boxSize, boxSize);
 						draw_health_bar(unit.hp, types.UNIT, 1);
 					}
-					else if(unit.type_id == 2)
-					{
+					else if (unit.type_id == 2) {
 						image(unit_miner2Texture, 0, 0, boxSize, boxSize);
 						draw_health_bar(unit.hp, types.UNIT, 2);
 					}
@@ -252,37 +259,64 @@ function draw_units() {
 				pop();
 			}
 		}
+
+		for (let unitInOnePlace of unitsInOnePlace) {
+			if (unitInOnePlace.count > 1) {
+				for (let pos of currentPos) {
+					if (pos.id == unitInOnePlace.units[0].id) {
+						if (unitInOnePlace.units[0].team_id == 1) {
+							push();
+							translate(-(boxSize * cols / 2 - boxSize / 2), -(boxSize * cols / 2 - boxSize / 2), 50);
+							translate(pos.x, pos.y + boxSize / 4, 0);
+							fill('blue');
+							circle(0, 0, boxSize / 2);
+							fill('white');
+							textAlign(CENTER, CENTER);
+							textSize(boxSize / 3);
+							text(unitInOnePlace.count, 0, 0);
+							pop();
+						} else if (unitInOnePlace.units[0].team_id == 2) {
+							push();
+							translate(-(boxSize * cols / 2 - boxSize / 2), -(boxSize * cols / 2 - boxSize / 2), 50);
+							translate(pos.x + boxSize, pos.y + boxSize / 4, 0);
+							fill('red');
+							circle(0, 0, boxSize / 2);
+							fill('white');
+							textAlign(CENTER, CENTER);
+							textSize(boxSize / 3);
+							text(unitInOnePlace.count, 0, 0);
+							pop();
+						}
+						break;
+					}
+				}
+			}
+		}
 	}
 }
 
-function draw_team_information()
-{
+function draw_team_information() {
 	for (let [index, team] of game.teams.entries()) {
-		let translate_height =  45 * index;
+		let translate_height = 45 * index;
 		text("Team: " + config.teams[index].name, ((-windowWidth / 2) + (windowWidth / 50)), ((-windowHeight / 2) + (windowHeight / 20)) + translate_height);
 		text("Balance: " + team.balance, ((-windowWidth / 2) + (windowWidth / 50)), ((-windowHeight / 2) + (windowHeight / 20)) + 15 + translate_height);
 	}
-
 }
 
-function draw_resources_feed()
-{
-	let translate_height =  45 * game.teams.length;
+function draw_resources_feed() {
+	let translate_height = 45 * game.teams.length;
 	text("Resources", ((-windowWidth / 2) + (windowWidth / 50)), ((-windowHeight / 2) + (windowHeight / 20)) + translate_height);
 	text(game.resources.length, ((-windowWidth / 2) + (windowWidth / 50)), ((-windowHeight / 2) + (windowHeight / 20)) + 15 + translate_height);
 }
 
-function draw_unit_feed()
-{
-	let translate_height =  45 * (game.teams.length + 1);
+function draw_unit_feed() {
+	let translate_height = 45 * (game.teams.length + 1);
 	text("Units", ((-windowWidth / 2) + (windowWidth / 50)), ((-windowHeight / 2) + (windowHeight / 20)) + translate_height);
 	text(game.units.length, ((-windowWidth / 2) + (windowWidth / 50)), ((-windowHeight / 2) + (windowHeight / 20)) + 15 + translate_height);
 }
 
 function draw() {
-
-	if(isGameOver)
-	{
+	if (isGameOver) {
 		return;
 	}
 
@@ -299,7 +333,7 @@ function draw() {
 	draw_cores();
 	draw_resources();
 	draw_units();
-	
+
 
 	// draw team information
 	draw_team_information();
