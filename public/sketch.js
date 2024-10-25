@@ -1,5 +1,5 @@
 let numFields = 35;
-let boxSize = 35;
+let boxSize = 20;
 let cols;
 let rows;
 let slider;
@@ -113,7 +113,7 @@ function setup() {
 	slider = createSlider(10, 60);
 	slider.position(10, 10);
 	slider.size(190);
-	slider.value(35);
+	slider.value(20);
 }
 
 function custom_scale() {
