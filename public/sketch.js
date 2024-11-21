@@ -316,10 +316,12 @@ function draw_units() {
 }
 
 function draw_team_information() {
+	let teamIcon = '🔵';
 	for (let [index, team] of game.teams.entries()) {
 		let translate_height = 45 * index;
-		text("Team: " + config.teams[index].name, ((-windowWidth / 2) + (windowWidth / 50)), ((-windowHeight / 2) + (windowHeight / 20)) + translate_height);
+		text(teamIcon + " Team: " + config.teams[index].name, ((-windowWidth / 2) + (windowWidth / 50)), ((-windowHeight / 2) + (windowHeight / 20)) + translate_height);
 		text("Balance: " + team.balance, ((-windowWidth / 2) + (windowWidth / 50)), ((-windowHeight / 2) + (windowHeight / 20)) + 15 + translate_height);
+		teamIcon = '🔴';
 	}
 }
 
