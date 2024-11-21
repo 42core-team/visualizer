@@ -146,9 +146,9 @@ function draw_cores() {
 	if (game.status == 2) {
 		console.log("Game over!");
 		if (game.cores[0].team_id == 1)
-			alert("blue team wins!");
+			alert("🔵 Team " + config.teams[0].name + " wins!");
 		else
-			alert("red team wins!");
+			alert("🔴 Team " + config.teams[1].name + " wins!");
 		isGameOver = true;
 		return;
 	}
