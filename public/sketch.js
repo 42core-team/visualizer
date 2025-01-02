@@ -61,6 +61,8 @@ function preload() {
 	unit_miner2Texture = loadImage('assets/images/miner_2.png');
 	unit_warrior1Texture = loadImage('assets/images/warrior_1.png');
 	unit_warrior2Texture = loadImage('assets/images/warrior_2.png');
+	unit_healer1Texture = loadImage('assets/images/healer_1.png');
+	unit_healer2Texture = loadImage('assets/images/healer_2.png');
 	unit_tank1Texture = loadImage('assets/images/tank_1.png');
 	unit_tank2Texture = loadImage('assets/images/tank_2.png');
 	unit_archer1Texture = loadImage('assets/images/archer_1.png');
@@ -257,6 +259,9 @@ function draw_units() {
 					else if (unit.type_id == 4) {
 						image(unit_archer1Texture, 0, 0, boxSize, boxSize);
 						draw_health_bar(unit.hp, types.UNIT, 4);
+					} else if (unit.type_id == 5) {
+						image(unit_healer1Texture, 0, 0, boxSize, boxSize);
+						draw_health_bar(unit.hp, types.UNIT, 5);
 					}
 				} else if (unit.team_id == 2) {
 					if (unit.type_id == 1) {
@@ -274,6 +279,9 @@ function draw_units() {
 					else if (unit.type_id == 4) {
 						image(unit_archer2Texture, 0, 0, boxSize, boxSize);
 						draw_health_bar(unit.hp, types.UNIT, 4);
+					} else if (unit.type_id == 5) {
+						image(unit_healer2Texture, 0, 0, boxSize, boxSize);
+						draw_health_bar(unit.hp, types.UNIT, 5);
 					}
 				}
 				pop();
