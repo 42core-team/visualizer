@@ -144,6 +144,7 @@ function reconnect() {
 function initialValues() {
 	configPresent = false;
 	isGameOver = false;
+	currentPos = [];
 }
 
 function custom_scale() {
