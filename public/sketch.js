@@ -92,6 +92,7 @@ function setupWebSocket() {
 			}
 			game.units.sort((a, b) => a.hp + b.hp);
 		} else {
+			initialValues();
 			let jsonString = event.data;
 			let sanitizedJsonString = jsonString.replace(invalidCharRegex, '');
 			try {
@@ -137,7 +138,8 @@ function setup() {
 }
 
 function reconnect() {
-	initialValues();
+	configPresent = false;
+	isGameOver = false;
 	setTimeout(setupWebSocket, 1000);
 }
 
@@ -145,6 +147,8 @@ function initialValues() {
 	configPresent = false;
 	isGameOver = false;
 	currentPos = [];
+	lastPacket = {};
+	game = {};
 }
 
 function custom_scale() {
