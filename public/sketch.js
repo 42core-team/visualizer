@@ -6,7 +6,6 @@ let slider;
 let factor;
 
 let socket;
-let unauthorized = true
 let configPresent = false
 let invalidCharRegex = /[\u0000-\u001F\u007F-\u009F]/g;
 let font;
@@ -31,8 +30,7 @@ function draw_health_bar(hp, type, type_id = 1) {
 			if (unit.type_id == type_id)
 				max_health = unit.hp;
 		}
-	}
-	else if (type == types.RESOURCE)
+	} else if (type == types.RESOURCE)
 		max_health = config.resources[0].hp;
 
 	percent_hp = (100 / max_health * hp) / 100;
@@ -43,8 +41,7 @@ function draw_health_bar(hp, type, type_id = 1) {
 		fill('red');
 		rect(boxSize * percent_hp, boxSize - boxSize / 5, boxSize - boxSize * percent_hp, boxSize / 5);
 		noFill();
-	}
-	else {
+	} else {
 		fill('green');
 		rect(0, - boxSize / 5, boxSize * percent_hp, boxSize / 5);
 		fill('red');
@@ -72,13 +69,15 @@ function preload() {
 	font = loadFont('assets/font/Roboto-Regular.ttf');
 }
 
-function setup() {
+function setupWebSocket() {
 	socket = new WebSocket('ws://{{.socket}}/ws');
 
 	// WebSocket event listeners
 	socket.onopen = () => {
 		console.log('WebSocket connection established');
-		socket.send('{"id":42}');
+		if (socket.readyState == WebSocket.OPEN) {
+			socket.send('{"id":42}');
+		}
 	};
 
 	socket.onmessage = (event) => {
@@ -92,22 +91,37 @@ function setup() {
 				console.error('Error:', error);
 			}
 			game.units.sort((a, b) => a.hp + b.hp);
-		}
-		else {
+		} else {
 			let jsonString = event.data;
 			let sanitizedJsonString = jsonString.replace(invalidCharRegex, '');
-			config = JSON.parse(sanitizedJsonString);
-			configPresent = true;
+			try {
+				config = JSON.parse(sanitizedJsonString);
+				if (!config.core_hp) {
+					reconnect();
+					return;
+				}
+				configPresent = true;
+			} catch (error) {
+				console.error('Failed to parse JSON:', sanitizedJsonString);
+				console.error('Error:', error);
+				reconnect();
+			}
 		}
 	};
 
 	socket.onerror = (error) => {
 		console.error('WebSocket error:', error);
+		reconnect();
 	};
 
 	socket.onclose = () => {
 		console.log('WebSocket connection closed');
+		reconnect();
 	};
+}
+
+function setup() {
+	setupWebSocket();
 
 	cols = config.width / 1000;
 	rows = config.height / 1000;
@@ -120,6 +134,16 @@ function setup() {
 	slider.position(10, 10);
 	slider.size(190);
 	slider.value(20);
+}
+
+function reconnect() {
+	initialValues();
+	setTimeout(setupWebSocket, 1000);
+}
+
+function initialValues() {
+	configPresent = false;
+	isGameOver = false;
 }
 
 function custom_scale() {
@@ -145,16 +169,6 @@ function draw_grid() {
 }
 
 function draw_cores() {
-	if (game.status == 2) {
-		console.log("Game over!");
-		if (game.cores[0].team_id == 1)
-			alert("🔵 Team " + config.teams[0].name + " wins!");
-		else
-			alert("🔴 Team " + config.teams[1].name + " wins!");
-		isGameOver = true;
-		return;
-	}
-
 	if (game.cores) {
 		for (let core of game.cores) {
 			if (core.pos) {
@@ -169,9 +183,8 @@ function draw_cores() {
 				pop();
 			}
 		}
-	}
-	else {
-		if (lastPacket.game.cores.length >= 2)
+	} else {
+		if (lastPacket.cores && lastPacket.cores.length >= 2)
 			alert("No cores left! The game is a draw!");
 		isGameOver = true;
 	}
@@ -324,6 +337,8 @@ function draw_units() {
 }
 
 function draw_team_information() {
+	if (!game.teams) return;
+
 	let teamIcon = '🔵';
 	for (let [index, team] of game.teams.entries()) {
 		let translate_height = 45 * index;
@@ -334,27 +349,45 @@ function draw_team_information() {
 }
 
 function draw_resources_feed() {
+	if (!game.resources || !game.teams) return;
+
 	let translate_height = 45 * game.teams.length;
 	text("Resources", ((-windowWidth / 2) + (windowWidth / 50)), ((-windowHeight / 2) + (windowHeight / 20)) + translate_height);
 	text(game.resources.length, ((-windowWidth / 2) + (windowWidth / 50)), ((-windowHeight / 2) + (windowHeight / 20)) + 15 + translate_height);
 }
 
 function draw_unit_feed() {
+	if (!game.units || !game.teams) return;
+
 	let translate_height = 45 * (game.teams.length + 1);
 	text("Units", ((-windowWidth / 2) + (windowWidth / 50)), ((-windowHeight / 2) + (windowHeight / 20)) + translate_height);
 	text(game.units.length, ((-windowWidth / 2) + (windowWidth / 50)), ((-windowHeight / 2) + (windowHeight / 20)) + 15 + translate_height);
 }
 
-function draw() {
-	if (isGameOver) {
+function draw_game_over() {
+	if (game.status == 2) {
+		console.log("Game over!");
+		push();
+		textSize(64);
+		textAlign(CENTER, CENTER);
+		stroke(0);
+		strokeWeight(2);
+		text
+		if (game.cores[0].team_id == 1) {
+			fill('blue');
+			text("🔵 Team " + config.teams[0].name + " wins!", 0, 0);
+		} else {
+			fill('red');
+			text("🔴 Team " + config.teams[1].name + " wins!", 0, 0);
+		}
+		pop();
+		isGameOver = true;
 		return;
 	}
+}
 
+function draw() {
 	translate(width / 2, height / 2);
-	// if (socket.readyState === WebSocket.OPEN && unauthorized) {
-	//	socket.send('{"id":42}');
-	//	unauthorized = false;
-	// }
 	custom_scale();
 	background(150);
 
@@ -364,12 +397,11 @@ function draw() {
 	draw_resources();
 	draw_units();
 
-
 	// draw team information
 	draw_team_information();
 	draw_unit_feed();
 	draw_resources_feed();
-
+	draw_game_over();
 	lastPacket = game;
 }
 

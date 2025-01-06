@@ -126,11 +126,11 @@
     "teams": [
         {
             "id": 1,
-            "balance": 123
+            "balance": 42
         },
         {
             "id": 2,
-            "balance": 123
+            "balance": 42
         }
     ]
 }
