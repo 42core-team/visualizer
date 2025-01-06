@@ -1,5 +1,5 @@
 {
-	"name": "Go",
+	"name": "Visualizer",
 	"dockerComposeFile": "docker-compose.yml",
 	"service": "app",
 	"workspaceFolder": "/workspace",
@@ -12,7 +12,6 @@
 		"vscode": {
 			"extensions": [
 				"golang.go",
-				"bierner.markdown-mermaid",
 				"ms-azuretools.vscode-docker"
 			]
 		}
