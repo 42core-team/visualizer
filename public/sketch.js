@@ -30,8 +30,7 @@ function draw_health_bar(hp, type, type_id = 1) {
 			if (unit.type_id == type_id)
 				max_health = unit.hp;
 		}
-	}
-	else if (type == types.RESOURCE)
+	} else if (type == types.RESOURCE)
 		max_health = config.resources[0].hp;
 
 	percent_hp = (100 / max_health * hp) / 100;
@@ -42,8 +41,7 @@ function draw_health_bar(hp, type, type_id = 1) {
 		fill('red');
 		rect(boxSize * percent_hp, boxSize - boxSize / 5, boxSize - boxSize * percent_hp, boxSize / 5);
 		noFill();
-	}
-	else {
+	} else {
 		fill('green');
 		rect(0, - boxSize / 5, boxSize * percent_hp, boxSize / 5);
 		fill('red');
@@ -77,7 +75,9 @@ function setupWebSocket() {
 	// WebSocket event listeners
 	socket.onopen = () => {
 		console.log('WebSocket connection established');
-		socket.send('{"id":42}');
+		if (socket.readyState == WebSocket.OPEN) {
+			socket.send('{"id":42}');
+		}
 	};
 
 	socket.onmessage = (event) => {
@@ -94,8 +94,18 @@ function setupWebSocket() {
 		} else {
 			let jsonString = event.data;
 			let sanitizedJsonString = jsonString.replace(invalidCharRegex, '');
-			config = JSON.parse(sanitizedJsonString);
-			configPresent = true;
+			try {
+				config = JSON.parse(sanitizedJsonString);
+				if (!config.core_hp) {
+					reconnect();
+					return;
+				}
+				configPresent = true;
+			} catch (error) {
+				console.error('Failed to parse JSON:', sanitizedJsonString);
+				console.error('Error:', error);
+				reconnect();
+			}
 		}
 	};
 
@@ -132,10 +142,6 @@ function reconnect() {
 }
 
 function initialValues() {
-	config = loadJSON('assets/data/config.json');
-	game = loadJSON('assets/data/state.json');
-	lastPacket = game;
-	currentPos = [];
 	configPresent = false;
 	isGameOver = false;
 }
@@ -163,16 +169,6 @@ function draw_grid() {
 }
 
 function draw_cores() {
-	if (game.status == 2) {
-		console.log("Game over!");
-		if (game.cores[0].team_id == 1)
-			alert("🔵 Team " + config.teams[0].name + " wins!");
-		else
-			alert("🔴 Team " + config.teams[1].name + " wins!");
-		isGameOver = true;
-		return;
-	}
-
 	if (game.cores) {
 		for (let core of game.cores) {
 			if (core.pos) {
@@ -368,6 +364,28 @@ function draw_unit_feed() {
 	text(game.units.length, ((-windowWidth / 2) + (windowWidth / 50)), ((-windowHeight / 2) + (windowHeight / 20)) + 15 + translate_height);
 }
 
+function draw_game_over() {
+	if (game.status == 2) {
+		console.log("Game over!");
+		push();
+		textSize(64);
+		textAlign(CENTER, CENTER);
+		stroke(0);
+		strokeWeight(2);
+		text
+		if (game.cores[0].team_id == 1) {
+			fill('blue');
+			text("🔵 Team " + config.teams[0].name + " wins!", 0, 0);
+		} else {
+			fill('red');
+			text("🔴 Team " + config.teams[1].name + " wins!", 0, 0);
+		}
+		pop();
+		isGameOver = true;
+		return;
+	}
+}
+
 function draw() {
 	translate(width / 2, height / 2);
 	custom_scale();
@@ -383,7 +401,7 @@ function draw() {
 	draw_team_information();
 	draw_unit_feed();
 	draw_resources_feed();
-
+	draw_game_over();
 	lastPacket = game;
 }
 
