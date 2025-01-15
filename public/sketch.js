@@ -26,7 +26,7 @@ const TEXT_SPACING = 30;
 let gridTextures = [];
 
 // We’ll keep track of each unit’s last position to detect movement.
-let lastPositions = {};  // key: unit.id, value: {x, y}
+let lastPositions = {};  // key: unit.id, value: {x, y, direction}
 
 let animationCounter = 0; // global ticker for frames
 let animationStates = {}; // key: unit.id, value: { state: 'idle' | 'run', counter: 0 }
@@ -287,19 +287,29 @@ function getSubTypeAndWeapon(type_id) {
 			return { subType: "healer", weapon: "staff" };
 		default:
 			return { subType: "basic", weapon: "sword" };
-	  }
+	}
 }
 
 function isUnitMoving(unit)
 {
 	let lastPos = lastPositions[unit.id];
 	if (!lastPos) {
-		lastPositions[unit.id] = { x: unit.pos.x, y: unit.pos.y };
-		return false; 
+		lastPositions[unit.id] = { x: unit.pos.x, y: unit.pos.y, direction: 'right' };
+		return { moving: false, direction: 'right' };
 	}
+
+	let dx = unit.pos.x - lastPos.x;
+	let dy = unit.pos.y - lastPos.y;
 	let dist = calc_distance(lastPos.x, lastPos.y, unit.pos.x, unit.pos.y);
-	lastPositions[unit.id] = { x: unit.pos.x, y: unit.pos.y };
-	return dist > 0.5;
+	let isMoving = dist > 0.5;
+
+	let direction = lastPos.direction;
+	if (isMoving) {
+		direction = dx > 0 ? 'right' : 'left';
+	}
+
+	lastPositions[unit.id] = { x: unit.pos.x, y: unit.pos.y, direction: direction };
+	return { moving: isMoving, direction: direction };
 }
 
 function setup() {
@@ -417,7 +427,7 @@ function calc_distance(x1, y1, x2, y2) {
 	return Math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2);
 }
 
-function drawAnimatedUnit(unit, x, y, stableState, animationCounter)
+function drawAnimatedUnit(unit, x, y, stableState, animationCounter, direction)
 {
 	let raceAnimations = (unit.team_id === 1) ? skeletonAnimations : goblinAnimations;
 	let { subType, weapon } = getSubTypeAndWeapon(unit.type_id);
@@ -435,13 +445,27 @@ function drawAnimatedUnit(unit, x, y, stableState, animationCounter)
 
 	let unitImage = animSet[state][frameIndex];
 	if (unitImage) {
-		image(unitImage, 0, 0, boxSize, boxSize);
+		if (direction === 'left') {
+			push();
+			scale(-1, 1);
+			image(unitImage, -boxSize, 0, boxSize, boxSize);
+			pop();
+		} else {
+			image(unitImage, 0, 0, boxSize, boxSize);
+		}
 	}
 
-	if (weapons[weapon])
-		image(weapons[weapon], 0, 0, boxSize, boxSize);
+	if (weapons[weapon]) {
+		if (direction === 'left') {
+			push();
+			scale(-1, 1);
+			image(weapons[weapon], -boxSize, 0, boxSize, boxSize);
+			pop();
+		} else {
+			image(weapons[weapon], 0, 0, boxSize, boxSize);
+		}
+	}
 
-	// Draw the health bar
 	draw_health_bar(unit.hp, types.UNIT, unit.type_id);
 }
 
@@ -458,9 +482,10 @@ function draw_units() {
 		x = unit.pos.x * factor;
 		y = unit.pos.y * factor;
 
-		exists = false;
+		// Group units in the same place (existing logic)
+		let exists = false;
 		for (let unitInOnePlace of unitsInOnePlace) {
-			distance = calc_distance(unitInOnePlace.x, unitInOnePlace.y, unit.pos.x, unit.pos.y);
+			let distance = calc_distance(unitInOnePlace.x, unitInOnePlace.y, unit.pos.x, unit.pos.y);
 			if (distance < 50 && unitInOnePlace.units[0].team_id == unit.team_id) {
 				unitInOnePlace.units.push(unit);
 				unitInOnePlace.count++;
@@ -472,24 +497,11 @@ function draw_units() {
 			unitsInOnePlace.push({ x: unit.pos.x, y: unit.pos.y, count: 1, units: [unit] });
 		}
 
-		exists = false;
-		for (let pos of currentPos) {
-			if (pos.id == unit.id) {
-				x = lerp(pos.x, x, 0.3);
-				y = lerp(pos.y, y, 0.3);
-				pos.x = x;
-				pos.y = y;
+		// Get movement and direction
+		let movement = isUnitMoving(unit);
+		let isRunningNow = movement.moving;
+		let direction = movement.direction;
 
-				exists = true;
-				break;
-			}
-		}
-		if (!exists) {
-			currentPos.push({ id: unit.id, x: x, y: y });
-		}
-
-		// State Management
-		let isRunningNow = isUnitMoving(unit);
 		if (!animationStates[unit.id]) {
 			animationStates[unit.id] = { state: isRunningNow ? 'run' : 'idle', counter: 0 };
 		} else {
@@ -506,15 +518,27 @@ function draw_units() {
 		}
 		let stableState = animationStates[unit.id].state;
 
+		// Get current position with interpolation
+		let pos = currentPos.find(p => p.id === unit.id);
+		if (pos) {
+			x = lerp(pos.x, x, 0.3);
+			y = lerp(pos.y, y, 0.3);
+			pos.x = x;
+			pos.y = y;
+		} else {
+			currentPos.push({ id: unit.id, x: x, y: y });
+		}
+
 		push();
 		translate(-(boxSize * cols / 2 - boxSize / 2), -(boxSize * cols / 2 - boxSize / 2), 50);
 		translate(x, y, 0);
 
-		drawAnimatedUnit(unit, x, y, stableState, animationCounter);
+		drawAnimatedUnit(unit, x, y, stableState, animationCounter, direction);
 
 		pop();
 	}
 }
+
 
 function draw_team_information() {
 	if (!game.teams) return;
