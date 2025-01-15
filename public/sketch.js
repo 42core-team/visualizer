@@ -76,7 +76,8 @@ function draw_health_bar(hp, type, type_id = 1) {
 }
 
 function preload() {
-	coreTexture = loadImage('assets/images/core.png');
+	goblinCoreTexture = loadImage('assets/images/goblin_core.png');
+	skeletonCoreTexture = loadImage('assets/images/skeleton_core.png');
 	groundTexture = loadImage('assets/images/ground.png');
 	groundTextureMossy = loadImage('assets/images/ground_mossy.png');
 	groundTextureCracked = loadImage('assets/images/ground_cracked.png');
@@ -393,7 +394,10 @@ function draw_cores() {
 				translatex = core.pos.x * factor;
 				translatey = core.pos.y * factor;
 				translate(translatex, translatey, 0);
-				image(coreTexture, 0, 0, boxSize, boxSize);
+				if (core.team_id == 1)
+					image(skeletonCoreTexture, 0, 0, boxSize, boxSize);
+				else
+					image(goblinCoreTexture, 0, 0, boxSize, boxSize);
 				draw_health_bar(core.hp, types.CORE, 1);
 				pop();
 			}
