@@ -14,6 +14,17 @@ let isGameOver = false;
 let lastPacket = {};
 let currentPos = [];
 
+let skeletonAnimations = {};
+let goblinAnimations = {};
+let weapons = {};
+
+// We’ll keep track of each unit’s last position to detect movement.
+let lastPositions = {};  // key: unit.id, value: {x, y}
+
+let animationCounter = 0; // global ticker for frames
+let animationStates = {}; // key: unit.id, value: { state: 'idle' | 'run', counter: 0 }
+const STATE_CHANGE_THRESHOLD = 5;
+
 const types = {
 	CORE: 0,
 	UNIT: 1,
@@ -54,19 +65,143 @@ function preload() {
 	coreTexture = loadImage('assets/images/core.png');
 	dirtTexture = loadImage('assets/images/dirt.png');
 	goldTexture = loadImage('assets/images/resource.png');
-	unit_miner1Texture = loadImage('assets/images/miner_1.png');
-	unit_miner2Texture = loadImage('assets/images/miner_2.png');
-	unit_warrior1Texture = loadImage('assets/images/warrior_1.png');
-	unit_warrior2Texture = loadImage('assets/images/warrior_2.png');
-	unit_healer1Texture = loadImage('assets/images/healer_1.png');
-	unit_healer2Texture = loadImage('assets/images/healer_2.png');
-	unit_tank1Texture = loadImage('assets/images/tank_1.png');
-	unit_tank2Texture = loadImage('assets/images/tank_2.png');
-	unit_archer1Texture = loadImage('assets/images/archer_1.png');
-	unit_archer2Texture = loadImage('assets/images/archer_2.png');
 	config = loadJSON('assets/data/config.json');
 	game = loadJSON('assets/data/state.json');
 	font = loadFont('assets/font/Roboto-Regular.ttf');
+
+	skeletonAnimations["basic"] = {
+		idle: [
+			loadImage('assets/images/skeleton_basic_idle__0.png'),
+			loadImage('assets/images/skeleton_basic_idle__1.png'),
+			loadImage('assets/images/skeleton_basic_idle__2.png'),
+			loadImage('assets/images/skeleton_basic_idle__3.png')
+		],
+		run: [
+			loadImage('assets/images/skeleton_basic_run__0.png'),
+			loadImage('assets/images/skeleton_basic_run__1.png'),
+			loadImage('assets/images/skeleton_basic_run__2.png'),
+			loadImage('assets/images/skeleton_basic_run__3.png'),
+			loadImage('assets/images/skeleton_basic_run__4.png'),
+			loadImage('assets/images/skeleton_basic_run__5.png')
+		]
+	}
+	skeletonAnimations["archer"] = {
+		idle: [
+			loadImage('assets/images/skeleton_archer_idle__0.png'),
+			loadImage('assets/images/skeleton_archer_idle__1.png'),
+			loadImage('assets/images/skeleton_archer_idle__2.png'),
+			loadImage('assets/images/skeleton_archer_idle__3.png')
+		],
+		run: [
+			loadImage('assets/images/skeleton_archer_run__0.png'),
+			loadImage('assets/images/skeleton_archer_run__1.png'),
+			loadImage('assets/images/skeleton_archer_run__2.png'),
+			loadImage('assets/images/skeleton_archer_run__3.png'),
+			loadImage('assets/images/skeleton_archer_run__4.png'),
+			loadImage('assets/images/skeleton_archer_run__5.png')
+		]
+	}
+	skeletonAnimations["tank"] = {
+		idle: [
+			loadImage('assets/images/skeleton_tank_idle__0.png'),
+			loadImage('assets/images/skeleton_tank_idle__1.png'),
+			loadImage('assets/images/skeleton_tank_idle__2.png'),
+			loadImage('assets/images/skeleton_tank_idle__3.png')
+		],
+		run: [
+			loadImage('assets/images/skeleton_tank_run__0.png'),
+			loadImage('assets/images/skeleton_tank_run__1.png'),
+			loadImage('assets/images/skeleton_tank_run__2.png'),
+			loadImage('assets/images/skeleton_tank_run__3.png'),
+			loadImage('assets/images/skeleton_tank_run__4.png'),
+			loadImage('assets/images/skeleton_tank_run__5.png')
+		]
+	}
+	skeletonAnimations["healer"] = {
+		idle: [
+			loadImage('assets/images/skeleton_healer_idle__0.png'),
+			loadImage('assets/images/skeleton_healer_idle__1.png'),
+			loadImage('assets/images/skeleton_healer_idle__2.png'),
+			loadImage('assets/images/skeleton_healer_idle__3.png')
+		],
+		run: [
+			loadImage('assets/images/skeleton_healer_run__0.png'),
+			loadImage('assets/images/skeleton_healer_run__1.png'),
+			loadImage('assets/images/skeleton_healer_run__2.png'),
+			loadImage('assets/images/skeleton_healer_run__3.png'),
+			loadImage('assets/images/skeleton_healer_run__4.png'),
+			loadImage('assets/images/skeleton_healer_run__5.png')
+		]
+	}
+	goblinAnimations["basic"] = {
+		idle: [
+			loadImage('assets/images/goblin_basic_idle__0.png'),
+			loadImage('assets/images/goblin_basic_idle__1.png'),
+			loadImage('assets/images/goblin_basic_idle__2.png'),
+			loadImage('assets/images/goblin_basic_idle__3.png')
+		],
+		run: [
+			loadImage('assets/images/goblin_basic_run__0.png'),
+			loadImage('assets/images/goblin_basic_run__1.png'),
+			loadImage('assets/images/goblin_basic_run__2.png'),
+			loadImage('assets/images/goblin_basic_run__3.png'),
+			loadImage('assets/images/goblin_basic_run__4.png'),
+			loadImage('assets/images/goblin_basic_run__5.png')
+		]
+	}
+	goblinAnimations["archer"] = {
+		idle: [
+			loadImage('assets/images/goblin_archer_idle__0.png'),
+			loadImage('assets/images/goblin_archer_idle__1.png'),
+			loadImage('assets/images/goblin_archer_idle__2.png'),
+			loadImage('assets/images/goblin_archer_idle__3.png')
+		],
+		run: [
+			loadImage('assets/images/goblin_archer_run__0.png'),
+			loadImage('assets/images/goblin_archer_run__1.png'),
+			loadImage('assets/images/goblin_archer_run__2.png'),
+			loadImage('assets/images/goblin_archer_run__3.png'),
+			loadImage('assets/images/goblin_archer_run__4.png'),
+			loadImage('assets/images/goblin_archer_run__5.png')
+		]
+	}
+	goblinAnimations["tank"] = {
+		idle: [
+			loadImage('assets/images/goblin_tank_idle__0.png'),
+			loadImage('assets/images/goblin_tank_idle__1.png'),
+			loadImage('assets/images/goblin_tank_idle__2.png'),
+			loadImage('assets/images/goblin_tank_idle__3.png')
+		],
+		run: [
+			loadImage('assets/images/goblin_tank_run__0.png'),
+			loadImage('assets/images/goblin_tank_run__1.png'),
+			loadImage('assets/images/goblin_tank_run__2.png'),
+			loadImage('assets/images/goblin_tank_run__3.png'),
+			loadImage('assets/images/goblin_tank_run__4.png'),
+			loadImage('assets/images/goblin_tank_run__5.png')
+		]
+	}
+	goblinAnimations["healer"] = {
+		idle: [
+			loadImage('assets/images/goblin_healer_idle__0.png'),
+			loadImage('assets/images/goblin_healer_idle__1.png'),
+			loadImage('assets/images/goblin_healer_idle__2.png'),
+			loadImage('assets/images/goblin_healer_idle__3.png')
+		],
+		run: [
+			loadImage('assets/images/goblin_healer_run__0.png'),
+			loadImage('assets/images/goblin_healer_run__1.png'),
+			loadImage('assets/images/goblin_healer_run__2.png'),
+			loadImage('assets/images/goblin_healer_run__3.png'),
+			loadImage('assets/images/goblin_healer_run__4.png'),
+			loadImage('assets/images/goblin_healer_run__5.png')
+		]
+	}
+	weapons["sword"] = loadImage('assets/images/sword.png');
+	weapons["shield"] = loadImage('assets/images/shield.png');
+	weapons["bow"] = loadImage('assets/images/bow.png');
+	weapons["pickaxe"] = loadImage('assets/images/pickaxe.png');
+	weapons["staff"] = loadImage('assets/images/staff.png');
 }
 
 function setupWebSocket() {
@@ -119,6 +254,36 @@ function setupWebSocket() {
 		console.log('WebSocket connection closed');
 		reconnect();
 	};
+}
+
+function getSubTypeAndWeapon(type_id) {
+	switch (type_id)
+	{
+		case 1: // warrior
+			return { subType: "basic", weapon: "sword" };
+		case 2: // worker
+			return { subType: "basic", weapon: "pickaxe" };
+		case 3: // tank
+			return { subType: "tank", weapon: "shield" };
+		case 4: // archer
+			return { subType: "archer", weapon: "bow" };
+		case 5: // healer
+			return { subType: "healer", weapon: "staff" };
+		default:
+			return { subType: "basic", weapon: "sword" };
+	  }
+}
+
+function isUnitMoving(unit)
+{
+	let lastPos = lastPositions[unit.id];
+	if (!lastPos) {
+		lastPositions[unit.id] = { x: unit.pos.x, y: unit.pos.y };
+		return false; 
+	}
+	let dist = calc_distance(lastPos.x, lastPos.y, unit.pos.x, unit.pos.y);
+	lastPositions[unit.id] = { x: unit.pos.x, y: unit.pos.y };
+	return dist > 0.5;
 }
 
 function setup() {
@@ -217,127 +382,102 @@ function calc_distance(x1, y1, x2, y2) {
 	return Math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2);
 }
 
+function drawAnimatedUnit(unit, x, y, stableState, animationCounter)
+{
+	let raceAnimations = (unit.team_id === 1) ? skeletonAnimations : goblinAnimations;
+	let { subType, weapon } = getSubTypeAndWeapon(unit.type_id);
+	let state = stableState; // Use the stable state instead of immediate detection
+
+	let frameIndex;
+	if (state === 'run') {
+		frameIndex = floor((animationCounter / 8) % 6); 
+	} else {
+		frameIndex = floor((animationCounter / 8) % 4);
+	}
+
+	let animSet = raceAnimations[subType];
+	if (!animSet) return;
+
+	let unitImage = animSet[state][frameIndex];
+	if (unitImage) {
+		image(unitImage, 0, 0, boxSize, boxSize);
+	}
+
+	if (weapons[weapon])
+		image(weapons[weapon], 0, 0, boxSize, boxSize);
+
+	// Draw the health bar
+	draw_health_bar(unit.hp, types.UNIT, unit.type_id);
+}
+
 function draw_units() {
 	factor = (cols * boxSize) / config.width;
-	if (game.units) {
-		let unitsInOnePlace = [];
-		for (let unit of game.units) {
-			if (unit.pos) {
+	animationCounter++;
+	if (!game.units)
+		return;
+	let unitsInOnePlace = [];
+	for (let unit of game.units) {
+		if (!unit.pos)
+			continue;
 
-				x = unit.pos.x * factor;
-				y = unit.pos.y * factor;
+		x = unit.pos.x * factor;
+		y = unit.pos.y * factor;
 
-				exists = false;
-				for (let unitInOnePlace of unitsInOnePlace) {
-					distance = calc_distance(unitInOnePlace.x, unitInOnePlace.y, unit.pos.x, unit.pos.y);
-					if (distance < 50 && unitInOnePlace.units[0].team_id == unit.team_id) {
-						unitInOnePlace.units.push(unit);
-						unitInOnePlace.count++;
-						exists = true;
-						break;
-					}
-				}
-				if (!exists) {
-					unitsInOnePlace.push({ x: unit.pos.x, y: unit.pos.y, count: 1, units: [unit] });
-				}
-
-				exists = false;
-				for (let pos of currentPos) {
-					if (pos.id == unit.id) {
-						x = lerp(pos.x, x, 0.3);
-						y = lerp(pos.y, y, 0.3);
-						pos.x = x;
-						pos.y = y;
-
-						exists = true;
-						break;
-					}
-				}
-				if (!exists) {
-					currentPos.push({ id: unit.id, x: x, y: y });
-				}
-
-				push();
-				translate(-(boxSize * cols / 2 - boxSize / 2), -(boxSize * cols / 2 - boxSize / 2), 50);
-				translate(x, y, 0);
-
-				if (unit.team_id == 1) {
-					if (unit.type_id == 1) {
-						image(unit_warrior1Texture, 0, 0, boxSize, boxSize);
-						draw_health_bar(unit.hp, types.UNIT, 1);
-					}
-					else if (unit.type_id == 2) {
-						image(unit_miner1Texture, 0, 0, boxSize, boxSize);
-						draw_health_bar(unit.hp, types.UNIT, 2);
-					}
-					else if (unit.type_id == 3) {
-						image(unit_tank1Texture, 0, 0, boxSize, boxSize);
-						draw_health_bar(unit.hp, types.UNIT, 3);
-					}
-					else if (unit.type_id == 4) {
-						image(unit_archer1Texture, 0, 0, boxSize, boxSize);
-						draw_health_bar(unit.hp, types.UNIT, 4);
-					} else if (unit.type_id == 5) {
-						image(unit_healer1Texture, 0, 0, boxSize, boxSize);
-						draw_health_bar(unit.hp, types.UNIT, 5);
-					}
-				} else if (unit.team_id == 2) {
-					if (unit.type_id == 1) {
-						image(unit_warrior2Texture, 0, 0, boxSize, boxSize);
-						draw_health_bar(unit.hp, types.UNIT, 1);
-					}
-					else if (unit.type_id == 2) {
-						image(unit_miner2Texture, 0, 0, boxSize, boxSize);
-						draw_health_bar(unit.hp, types.UNIT, 2);
-					}
-					else if (unit.type_id == 3) {
-						image(unit_tank2Texture, 0, 0, boxSize, boxSize);
-						draw_health_bar(unit.hp, types.UNIT, 3);
-					}
-					else if (unit.type_id == 4) {
-						image(unit_archer2Texture, 0, 0, boxSize, boxSize);
-						draw_health_bar(unit.hp, types.UNIT, 4);
-					} else if (unit.type_id == 5) {
-						image(unit_healer2Texture, 0, 0, boxSize, boxSize);
-						draw_health_bar(unit.hp, types.UNIT, 5);
-					}
-				}
-				pop();
-			}
-		}
-
+		exists = false;
 		for (let unitInOnePlace of unitsInOnePlace) {
-			if (unitInOnePlace.count > 1) {
-				for (let pos of currentPos) {
-					if (pos.id == unitInOnePlace.units[0].id) {
-						if (unitInOnePlace.units[0].team_id == 1) {
-							push();
-							translate(-(boxSize * cols / 2 - boxSize / 2), -(boxSize * cols / 2 - boxSize / 2), 50);
-							translate(pos.x, pos.y + boxSize / 4, 0);
-							fill('blue');
-							circle(0, 0, boxSize / 2);
-							fill('white');
-							textAlign(CENTER, CENTER);
-							textSize(boxSize / 3);
-							text(unitInOnePlace.count, 0, 0);
-							pop();
-						} else if (unitInOnePlace.units[0].team_id == 2) {
-							push();
-							translate(-(boxSize * cols / 2 - boxSize / 2), -(boxSize * cols / 2 - boxSize / 2), 50);
-							translate(pos.x + boxSize, pos.y + boxSize / 4, 0);
-							fill('red');
-							circle(0, 0, boxSize / 2);
-							fill('white');
-							textAlign(CENTER, CENTER);
-							textSize(boxSize / 3);
-							text(unitInOnePlace.count, 0, 0);
-							pop();
-						}
-						break;
-					}
-				}
+			distance = calc_distance(unitInOnePlace.x, unitInOnePlace.y, unit.pos.x, unit.pos.y);
+			if (distance < 50 && unitInOnePlace.units[0].team_id == unit.team_id) {
+				unitInOnePlace.units.push(unit);
+				unitInOnePlace.count++;
+				exists = true;
+				break;
 			}
 		}
+		if (!exists) {
+			unitsInOnePlace.push({ x: unit.pos.x, y: unit.pos.y, count: 1, units: [unit] });
+		}
+
+		exists = false;
+		for (let pos of currentPos) {
+			if (pos.id == unit.id) {
+				x = lerp(pos.x, x, 0.3);
+				y = lerp(pos.y, y, 0.3);
+				pos.x = x;
+				pos.y = y;
+
+				exists = true;
+				break;
+			}
+		}
+		if (!exists) {
+			currentPos.push({ id: unit.id, x: x, y: y });
+		}
+
+		// State Management
+		let isRunningNow = isUnitMoving(unit);
+		if (!animationStates[unit.id]) {
+			animationStates[unit.id] = { state: isRunningNow ? 'run' : 'idle', counter: 0 };
+		} else {
+			let currentState = animationStates[unit.id].state;
+			if ((isRunningNow && currentState === 'idle') || (!isRunningNow && currentState === 'run')) {
+				animationStates[unit.id].counter += 1;
+				if (animationStates[unit.id].counter >= STATE_CHANGE_THRESHOLD) {
+					animationStates[unit.id].state = isRunningNow ? 'run' : 'idle';
+					animationStates[unit.id].counter = 0;
+				}
+			} else {
+				animationStates[unit.id].counter = 0;
+			}
+		}
+		let stableState = animationStates[unit.id].state;
+
+		push();
+		translate(-(boxSize * cols / 2 - boxSize / 2), -(boxSize * cols / 2 - boxSize / 2), 50);
+		translate(x, y, 0);
+
+		drawAnimatedUnit(unit, x, y, stableState, animationCounter);
+
+		pop();
 	}
 }
 
