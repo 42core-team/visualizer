@@ -23,6 +23,8 @@ let TEXT_OFFSET_Y;
 const LINE_HEIGHT = 50;
 const TEXT_SPACING = 30;
 
+let gridTextures = [];
+
 // We’ll keep track of each unit’s last position to detect movement.
 let lastPositions = {};  // key: unit.id, value: {x, y}
 
@@ -75,7 +77,9 @@ function draw_health_bar(hp, type, type_id = 1) {
 
 function preload() {
 	coreTexture = loadImage('assets/images/core.png');
-	dirtTexture = loadImage('assets/images/dirt.png');
+	groundTexture = loadImage('assets/images/ground.png');
+	groundTextureMossy = loadImage('assets/images/ground_mossy.png');
+	groundTextureCracked = loadImage('assets/images/ground_cracked.png');
 	goldTexture = loadImage('assets/images/resource.png');
 	config = loadJSON('assets/data/config.json');
 	game = loadJSON('assets/data/state.json');
@@ -345,15 +349,26 @@ function custom_scale() {
 }
 
 function draw_grid() {
+	let nbr = 0;
 	for (let col = 0; col <= cols; col++) {
 		for (let row = 0; row <= rows; row++) {
 			let x = col * (boxSize);
 			let y = row * (boxSize);
 			push();
 			translate(x - (cols - 1) * (boxSize) / 2, y - (rows - 1) * (boxSize) / 2, 0);
-			image(dirtTexture, 0, 0, boxSize, boxSize);
+			let img = groundTexture;
+			if (random(1) < 0.05) 
+				img = groundTextureMossy;
+			if (random(1) < 0.2)
+				img = groundTextureCracked;
+			if (nbr < gridTextures.length)
+				img = gridTextures[nbr];
+			else
+				gridTextures.push(img);
+			image(img, 0, 0, boxSize, boxSize);
 			translate(0, 0, (boxSize / 2) + 1);
 			pop();
+			nbr++;
 		}
 	}
 }
