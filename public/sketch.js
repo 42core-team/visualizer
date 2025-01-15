@@ -18,6 +18,11 @@ let skeletonAnimations = {};
 let goblinAnimations = {};
 let weapons = {};
 
+let TEXT_OFFSET_X;
+let TEXT_OFFSET_Y;
+const LINE_HEIGHT = 50;
+const TEXT_SPACING = 30;
+
 // We’ll keep track of each unit’s last position to detect movement.
 let lastPositions = {};  // key: unit.id, value: {x, y}
 
@@ -46,17 +51,24 @@ function draw_health_bar(hp, type, type_id = 1) {
 
 	percent_hp = (100 / max_health * hp) / 100;
 
-	if (type == types.UNIT) {
-		fill('green');
+	if (type == types.UNIT)
+	{
+		fill(0, 255, 0, 100);
 		rect(0, boxSize - boxSize / 5, boxSize * percent_hp, boxSize / 5);
-		fill('red');
+		
+		fill(255, 0, 0, 100);
 		rect(boxSize * percent_hp, boxSize - boxSize / 5, boxSize - boxSize * percent_hp, boxSize / 5);
+		
 		noFill();
-	} else {
-		fill('green');
-		rect(0, - boxSize / 5, boxSize * percent_hp, boxSize / 5);
-		fill('red');
-		rect(boxSize * percent_hp, - boxSize / 5, boxSize - boxSize * percent_hp, boxSize / 5);
+	}
+	else
+	{
+		fill(0, 255, 0, 100);
+		rect(0, -boxSize / 5, boxSize * percent_hp, boxSize / 5);
+		
+		fill(255, 0, 0, 100);
+		rect(boxSize * percent_hp, -boxSize / 5, boxSize - boxSize * percent_hp, boxSize / 5);
+		
 		noFill();
 	}
 }
@@ -67,7 +79,7 @@ function preload() {
 	goldTexture = loadImage('assets/images/resource.png');
 	config = loadJSON('assets/data/config.json');
 	game = loadJSON('assets/data/state.json');
-	font = loadFont('assets/font/Roboto-Regular.ttf');
+	font = loadFont('assets/font/BlackOpsOne-Regular.ttf');
 
 	skeletonAnimations["basic"] = {
 		idle: [
@@ -294,12 +306,20 @@ function setup() {
 	// frameRate(30);
 	createCanvas(windowWidth, windowHeight);
 	noStroke();
-	background(220);
+	background(0);
 
 	slider = createSlider(10, 60);
 	slider.position(10, 10);
 	slider.size(190);
 	slider.value(20);
+
+	textFont(font);
+	textSize(30);
+	textAlign(LEFT, TOP);
+	textFont(font);
+
+	TEXT_OFFSET_X = (-width / 2) + (width / 50);
+	TEXT_OFFSET_Y = (-height / 2) + (height / 20);
 }
 
 function reconnect() {
@@ -484,46 +504,56 @@ function draw_units() {
 function draw_team_information() {
 	if (!game.teams) return;
 
-	let teamIcon = '🔵';
+	let teamIcon = '💀';
+	let currentY = TEXT_OFFSET_Y;
+
 	for (let [index, team] of game.teams.entries()) {
-		let translate_height = 45 * index;
-		text(teamIcon + " Team: " + config.teams[index].name, ((-windowWidth / 2) + (windowWidth / 50)), ((-windowHeight / 2) + (windowHeight / 20)) + translate_height);
-		text("Balance: " + team.balance, ((-windowWidth / 2) + (windowWidth / 50)), ((-windowHeight / 2) + (windowHeight / 20)) + 15 + translate_height);
-		teamIcon = '🔴';
+		fill('white');
+		text(`${teamIcon} Team: ${config.teams[index].name}`, TEXT_OFFSET_X, currentY);
+		currentY += TEXT_SPACING;
+		text(`Balance: ${team.balance}`, TEXT_OFFSET_X, currentY);
+		currentY += TEXT_SPACING + 10;
+		teamIcon = '🤢';
 	}
 }
 
 function draw_resources_feed() {
 	if (!game.resources || !game.teams) return;
 
-	let translate_height = 45 * game.teams.length;
-	text("Resources", ((-windowWidth / 2) + (windowWidth / 50)), ((-windowHeight / 2) + (windowHeight / 20)) + translate_height);
-	text(game.resources.length, ((-windowWidth / 2) + (windowWidth / 50)), ((-windowHeight / 2) + (windowHeight / 20)) + 15 + translate_height);
+	let currentY = TEXT_OFFSET_Y + (game.teams.length * (TEXT_SPACING + 10)) + 70;
+
+	fill('white');
+	text("Resources", TEXT_OFFSET_X, currentY);
+	currentY += TEXT_SPACING;
+	text(`Count: ${game.resources.length}`, TEXT_OFFSET_X, currentY);
 }
 
 function draw_unit_feed() {
 	if (!game.units || !game.teams) return;
 
-	let translate_height = 45 * (game.teams.length + 1);
-	text("Units", ((-windowWidth / 2) + (windowWidth / 50)), ((-windowHeight / 2) + (windowHeight / 20)) + translate_height);
-	text(game.units.length, ((-windowWidth / 2) + (windowWidth / 50)), ((-windowHeight / 2) + (windowHeight / 20)) + 15 + translate_height);
+	let currentY = TEXT_OFFSET_Y + (game.teams.length * (TEXT_SPACING + 10)) + 140;
+
+	fill('white');
+	text("Units", TEXT_OFFSET_X, currentY);
+	currentY += TEXT_SPACING;
+	text(`Count: ${game.units.length}`, TEXT_OFFSET_X, currentY);
 }
 
 function draw_game_over() {
 	if (game.status == 2) {
 		console.log("Game over!");
 		push();
-		textSize(64);
+		textSize(75);
 		textAlign(CENTER, CENTER);
 		stroke(0);
 		strokeWeight(2);
 		text
 		if (game.cores[0].team_id == 1) {
-			fill('blue');
-			text("🔵 Team " + config.teams[0].name + " wins!", 0, 0);
+			fill('white');
+			text("💀 Team " + config.teams[0].name + " wins!", 0, 0);
 		} else {
-			fill('red');
-			text("🔴 Team " + config.teams[1].name + " wins!", 0, 0);
+			fill('green');
+			text("🤢 Team " + config.teams[1].name + " wins!", 0, 0);
 		}
 		pop();
 		isGameOver = true;
@@ -534,7 +564,7 @@ function draw_game_over() {
 function draw() {
 	translate(width / 2, height / 2);
 	custom_scale();
-	background(150);
+	background(0);
 
 	// draw playing field and its elements
 	draw_grid();
