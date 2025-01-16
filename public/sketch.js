@@ -431,6 +431,112 @@ function calc_distance(x1, y1, x2, y2) {
 	return Math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2);
 }
 
+function drawDirectionalTriangle(x1, y1, x2, y2, healer)
+{
+	let angle = atan2(y2 - y1, x2 - x1);
+
+	let dist = calc_distance(x1, y1, x2, y2);
+
+	const baseWidth = 20;
+
+	push();
+	translate(x1, y1);
+	rotate(angle);
+	noStroke();
+	
+	beginShape(TRIANGLES);
+
+	if (!healer)
+	{
+		fill(255, 0, 0, 200);
+		vertex(0, -baseWidth / 2);
+		fill(255, 0, 0, 120);
+		vertex(0, baseWidth / 2);
+		fill(255, 0, 0, 50);
+		vertex(dist, 0);
+	}
+	else
+	{
+		// yellow
+		fill(255, 255, 0, 200);
+		vertex(0, -baseWidth / 2);
+		fill(255, 255, 0, 120);
+		vertex(0, baseWidth / 2);
+		fill(255, 255, 0, 50);
+		vertex(dist, 0);
+	}
+
+	endShape(CLOSE);
+	pop();
+}
+
+function draw_target_lines() {
+	if (!game.units) return;
+
+	push(); 
+	strokeWeight(3);
+
+	for (let unit of game.units) {
+		if (!unit.pos || !unit.target_id) continue;
+		if (unit.type_id === 1) continue; // warrior
+		if (unit.type_id === 2) continue; // worker
+		if (unit.type_id === 3) continue; // tank
+
+		const targetEntity = findTargetEntity(unit.target_id);
+		if (!targetEntity || !targetEntity.pos) continue;
+
+		const unitConfig = config.units.find(u => u.type_id === unit.type_id);
+		if (!unitConfig) continue;
+		
+		const distance = calc_distance(unit.pos.x, unit.pos.y, targetEntity.pos.x, targetEntity.pos.y);
+
+		if (distance < unitConfig.min_range) continue;
+		if (distance > unitConfig.max_range) continue;
+
+		const x1 = unit.pos.x * factor 
+				- (boxSize * cols / 2 - boxSize / 2) 
+				+ boxSize / 2;
+
+		const y1 = unit.pos.y * factor 
+				- (boxSize * rows / 2 - boxSize / 2) 
+				+ boxSize / 2;
+
+		const x2 = targetEntity.pos.x * factor
+				- (boxSize * cols / 2 - boxSize / 2) 
+				+ boxSize / 2;
+		
+		const y2 = targetEntity.pos.y * factor
+				- (boxSize * rows / 2 - boxSize / 2) 
+				+ boxSize / 2;
+
+		if (unit.type_id === 5) {
+			drawDirectionalTriangle(x1, y1, x2, y2, true);
+		} else {
+			drawDirectionalTriangle(x1, y1, x2, y2, false);
+		}
+
+	}
+
+	pop();
+}
+
+function findTargetEntity(targetId) {
+	if (!targetId) return null;
+
+	// unit
+	let target = game.units && game.units.find(u => u.id === targetId);
+	if (target) return target;
+
+	// core
+	target = game.cores && game.cores.find(c => c.id === targetId);
+	if (target) return target;
+
+	// resource
+	target = game.resources && game.resources.find(r => r.id === targetId);
+	return target || null;
+}
+
+
 function drawAnimatedUnit(unit, x, y, stableState, animationCounter, direction)
 {
 	let raceAnimations = (unit.team_id === 1) ? skeletonAnimations : goblinAnimations;
@@ -611,6 +717,7 @@ function draw() {
 
 	// draw playing field and its elements
 	draw_grid();
+	draw_target_lines();
 	draw_cores();
 	draw_resources();
 	draw_units();
