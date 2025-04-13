@@ -14,9 +14,10 @@ FROM alpine:latest
 WORKDIR /app
 
 # Copy only the binary from the builder stage
-COPY --from=builder /bridge_server /app/bridge_server
+COPY --from=builder /bridge_server .
+COPY --from=builder /app/public ./public
 
 # Add necessary certificates for HTTPS
 RUN apk --no-cache add ca-certificates
 
-CMD [ "/app/bridge_server" ]
+CMD [ "./bridge_server" ]

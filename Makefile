@@ -1,5 +1,5 @@
-IMAGE_NAME = registry.coregame.de/core/visualizer
-IMAGE_TAG = latest
+IMAGE_NAME = ghcr.io/42core-team/visualizer
+IMAGE_TAG = event-00
 
 visualizer:
 	go run main.go
