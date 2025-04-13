@@ -1,0 +1,58 @@
+name: Build Visalizer Docker Image
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - dev
+      - v2
+      - "event-*"
+      - "rush-*"
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: "${{ github.workflow }} @ ${{ github.ref_name }}-${{ github.sha }}"
+  cancel-in-progress: true
+
+jobs:
+  build-visualizer-image:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: "true"
+          ssh-key: ${{ secrets.SSH_KEY }}
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set vars
+        id: vars
+        run: echo "sha_short=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+
+      - name: Build and push visalizer multi-arch
+        uses: docker/build-push-action@v5
+        with:
+          context: ./
+          file: ./Dockerfile
+          platforms: linux/arm64,linux/amd64
+          push: true
+          tags: |
+            ghcr.io/42core-team/visualizer:${{ github.ref_name }}
+            ghcr.io/42core-team/visualizer:${{ github.ref_name }}-${{ steps.vars.outputs.sha_short }}
