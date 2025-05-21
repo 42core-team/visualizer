@@ -112,7 +112,7 @@ function preload() {
 	goldTexture = loadImage('assets/images/resource.png');
 	config = loadJSON('assets/data/config.json');
 	game = loadJSON('assets/data/state.json');
-	font = loadFont('assets/font/BlackOpsOne-Regular.ttf');
+	font = loadFont('assets/font/Quantico-Regular.ttf');
 
 	skeletonAnimations["basic"] = {
 		idle: [
