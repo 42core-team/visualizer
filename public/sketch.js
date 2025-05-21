@@ -23,6 +23,10 @@ let TEXT_OFFSET_Y;
 const LINE_HEIGHT = 50;
 const TEXT_SPACING = 30;
 
+const WEAPON_ANIM_TOTAL_FRAMES = 10;
+const WEAPON_FORWARD_FRAMES = 3;
+const MAX_SLASH_OFFSET = boxSize * 0.5;
+
 let gridTextures = [];
 
 const UNIT_DIRECTION_CHANGE_THRESHOLD = 5;
@@ -32,7 +36,7 @@ let directionStates = {}; // key: unit.id, value: { state: 'left' | 'right', cou
 let lastPositions = {};  // key: unit.id, value: {x, y, direction}
 
 let animationCounter = 0; // global ticker for frames
-let animationStates = {}; // key: unit.id, value: { state: 'idle' | 'run', counter: 0 }
+let animationStates = {}; // key: unit.id, value: { state: 'idle' | 'run', counter: 0, weaponCounter: 0 }
 const STATE_CHANGE_THRESHOLD = 5;
 
 const types = {
@@ -539,8 +543,37 @@ function findTargetEntity(targetId) {
 	return target || null;
 }
 
+function drawWeaponSlash(unit, weaponTex, weaponCounter) {
+	const target = findTargetEntity(unit.target_id);
+	if (!target) return;
 
-function drawAnimatedUnit(unit, x, y, stableState, animationCounter, direction)
+	const dx = (target.pos.x - unit.pos.x) * factor;
+	const dy = (target.pos.y - unit.pos.y) * factor;
+
+	const angle = atan2(dy, dx) + HALF_PI;
+
+	const t    = weaponCounter / WEAPON_ANIM_TOTAL_FRAMES;
+	const ease = t < 0.5
+		? map(t, 0, 0.5, 0, MAX_SLASH_OFFSET)
+		: map(t, 0.5, 1, MAX_SLASH_OFFSET, 0);
+
+	let dist = sqrt(dx*dx + dy*dy) || 1;
+	const ux  = dx / dist;
+	const uy  = dy / dist;
+
+	const ox = ux * ease;
+	const oy = uy * ease;
+
+	push();
+		translate(boxSize/2 + ox, boxSize/2 + oy);
+		rotate(angle);
+		imageMode(CENTER);
+		image(weaponTex, 0, 0, boxSize, boxSize);
+		imageMode(CORNER);
+	pop();
+}
+
+function drawAnimatedUnit(unit, x, y, stableState, animationCounter, renderDirection)
 {
 	let raceAnimations = (unit.team_id === 1) ? skeletonAnimations : goblinAnimations;
 	let { subType, weapon } = getSubTypeAndWeapon(unit.type_id);
@@ -558,7 +591,7 @@ function drawAnimatedUnit(unit, x, y, stableState, animationCounter, direction)
 
 	let unitImage = animSet[state][frameIndex];
 	if (unitImage) {
-		if (direction === 'left') {
+		if (renderDirection === 'left') {
 			push();
 			scale(-1, 1);
 			image(unitImage, -boxSize, 0, boxSize, boxSize);
@@ -568,10 +601,13 @@ function drawAnimatedUnit(unit, x, y, stableState, animationCounter, direction)
 		}
 	}
 
-	if (weapons[weapon]) {
-		if (direction === 'left') {
-			push();
-			scale(-1, 1);
+	if (unit.enableWeaponAnimation && weapons[weapon]) {
+		let as = animationStates[unit.id];
+		as.weaponCounter = (as.weaponCounter + 1) % WEAPON_ANIM_TOTAL_FRAMES;
+		drawWeaponSlash(unit, weapons[weapon], as.weaponCounter);
+	} else {
+		if (renderDirection === 'left') {
+			push(); scale(-1,1);
 			image(weapons[weapon], -boxSize, 0, boxSize, boxSize);
 			pop();
 		} else {
@@ -595,7 +631,6 @@ function draw_units() {
 		x = unit.pos.x * factor;
 		y = unit.pos.y * factor;
 
-		// Group units in the same place (existing logic)
 		let exists = false;
 		for (let unitInOnePlace of unitsInOnePlace) {
 			let distance = calc_distance(unitInOnePlace.x, unitInOnePlace.y, unit.pos.x, unit.pos.y);
@@ -632,7 +667,7 @@ function draw_units() {
 
 
 		if (!animationStates[unit.id]) {
-			animationStates[unit.id] = { state: isRunningNow ? 'run' : 'idle', counter: 0 };
+			animationStates[unit.id] = { state: isRunningNow ? 'run' : 'idle', counter: 0, weaponCounter: 0 };
 		} else {
 			let currentState = animationStates[unit.id].state;
 			if ((isRunningNow && currentState === 'idle') || (!isRunningNow && currentState === 'run')) {
@@ -659,15 +694,30 @@ function draw_units() {
 		}
 
 		push();
-		translate(-(boxSize * cols / 2 - boxSize / 2), -(boxSize * cols / 2 - boxSize / 2), 50);
+		translate(-(boxSize * cols / 2 - boxSize / 2), -(boxSize * rows / 2 - boxSize / 2), 50);
 		translate(x, y, 0);
 
+		const unitCfg = config.units.find(u => u.type_id === unit.type_id);
+		const tgt = unit.target_id ? findTargetEntity(unit.target_id) : null;
+		const hasMeleeTarget =
+			unit.target_id
+			&& unitCfg
+			&& tgt
+			&& tgt.pos
+			&& (() => {
+					const d = calc_distance(
+						unit.pos.x, unit.pos.y,
+						tgt.pos.x,  tgt.pos.y
+					);
+					return d >= unitCfg.min_range && d <= unitCfg.max_range;
+				})();
+
+		unit.enableWeaponAnimation = [1,2,3].includes(unit.type_id) && hasMeleeTarget;
 		drawAnimatedUnit(unit, x, y, stableState, animationCounter, direction);
 
 		pop();
 	}
 }
-
 
 function draw_team_information() {
 	if (!game.teams) return;
