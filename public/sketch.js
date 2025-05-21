@@ -25,6 +25,7 @@ let TEXT_OFFSET_X;
 let TEXT_OFFSET_Y;
 const LINE_HEIGHT = 50;
 const TEXT_SPACING = 30;
+const UI_PADDING = 20;
 
 const WEAPON_ANIM_TOTAL_FRAMES = 10;
 const WEAPON_FORWARD_FRAMES = 3;
@@ -351,7 +352,7 @@ function setup() {
 	background(0);
 
 	slider = createSlider(10, 60);
-	slider.position(10, 10);
+	slider.position(windowWidth - slider.width - UI_PADDING - 30, UI_PADDING);
 	slider.size(190);
 	slider.value(20);
 	slider.changed(() => {
@@ -777,41 +778,33 @@ function draw_units() {
 }
 
 function draw_team_information() {
-	if (!game.teams) return;
+	if (!game.teams || !config.teams) return;
 
-	let teamIcon = '💀';
-	let currentY = TEXT_OFFSET_Y;
+	textFont(font);
+	textSize(30);
+	textAlign(LEFT, TOP);
+	fill('white');
 
-	for (let [index, team] of game.teams.entries()) {
-		fill('white');
-		text(`${teamIcon} Team: ${config.teams[index].name}`, TEXT_OFFSET_X, currentY);
-		currentY += TEXT_SPACING;
-		text(`Balance: ${team.balance}`, TEXT_OFFSET_X, currentY);
-		currentY += TEXT_SPACING + 10;
-		teamIcon = '🤢';
-	}
+	const team0 = game.teams[0];
+	fill('lightgray');
+	text(`Skeletons: ${config.teams[0].name}`, UI_PADDING, UI_PADDING);
+	text(`Balance: ${team0.balance}`, UI_PADDING, UI_PADDING + TEXT_SPACING);
 }
 
-function draw_resources_feed() {
-	if (!game.resources || !game.teams) return;
+function draw_second_team_information() {
+	if (!game.teams || !config.teams || game.teams.length < 2) return;
 
-	let currentY = TEXT_OFFSET_Y + (game.teams.length * (TEXT_SPACING + 10)) + 70;
-
+	textFont(font);
+	textSize(30);
+	textAlign(RIGHT, BOTTOM);
 	fill('white');
-	text("Resources", TEXT_OFFSET_X, currentY);
-	currentY += TEXT_SPACING;
-	text(`Count: ${game.resources.length}`, TEXT_OFFSET_X, currentY);
-}
 
-function draw_unit_feed() {
-	if (!game.units || !game.teams) return;
-
-	let currentY = TEXT_OFFSET_Y + (game.teams.length * (TEXT_SPACING + 10)) + 140;
-
-	fill('white');
-	text("Units", TEXT_OFFSET_X, currentY);
-	currentY += TEXT_SPACING;
-	text(`Count: ${game.units.length}`, TEXT_OFFSET_X, currentY);
+	const team1 = game.teams[1];
+	const x = width  - UI_PADDING;
+	const y = height - UI_PADDING;
+	fill('greenyellow')
+	text(`Goblins: ${config.teams[1].name}`, x, y - TEXT_SPACING);
+	text(`Balance: ${team1.balance}`, x, y);
 }
 
 function draw_game_over() {
@@ -824,11 +817,11 @@ function draw_game_over() {
 		strokeWeight(2);
 		text
 		if (game.cores[0].team_id == 1) {
-			fill('white');
-			text("💀 Team " + config.teams[0].name + " wins!", 0, 0);
+			fill('lightgray');
+			text("Skeleton Team " + config.teams[0].name + " wins!", 0, 0);
 		} else {
-			fill('green');
-			text("🤢 Team " + config.teams[1].name + " wins!", 0, 0);
+			fill('greenyellow');
+			text("Goblin Team " + config.teams[1].name + " wins!", 0, 0);
 		}
 		pop();
 		isGameOver = true;
@@ -849,9 +842,12 @@ function draw() {
 	draw_units();
 
 	// draw team information
-	draw_team_information();
-	draw_unit_feed();
-	draw_resources_feed();
+	push();
+		resetMatrix();
+		draw_team_information();
+		draw_second_team_information();
+	pop();
+
 	draw_game_over();
 	lastPacket = game;
 }
