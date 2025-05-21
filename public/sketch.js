@@ -43,17 +43,99 @@ let lastCols = 0, lastRows = 0;
 const UNIT_DIRECTION_CHANGE_THRESHOLD = 5;
 let directionStates = {}; // key: unit.id, value: { state: 'left' | 'right', counter: 0 }
 
-// We’ll keep track of each unit’s last position to detect movement.
 let lastPositions = {};  // key: unit.id, value: {x, y, direction}
 
-let animationCounter = 0; // global ticker for frames
+let animationCounter = 0;
 let animationStates = {}; // key: unit.id, value: { state: 'idle' | 'run', counter: 0, weaponCounter: 0 }
 const STATE_CHANGE_THRESHOLD = 5;
+
+let winRatioDisplay = 0.5;
+const BAR_WIDTH       = 20;         // bar thickness
+const BAR_ROUNDING    = 10;         // px corner radius
+const RATIO_EASE      = 0.05;       // lerp factor
 
 const types = {
 	CORE: 0,
 	UNIT: 1,
 	RESOURCE: 2
+}
+
+function updateWinRatio() {
+	if (!game.units || game.units.length === 0) return;
+	if (!game.teams || game.teams.length < 2) return;
+	if (!game.cores || game.cores.length < 2) return;
+
+	let skHP = 0, gbHP = 0;
+	for (let u of game.units) {
+		let unitWorth = u.hp;
+		if (u.type_id === 2) unitWorth *= 0.35; // worker
+		if (u.type_id === 3) unitWorth *= 0.6; // tank
+
+		// calculate distance to opponent core from unit position
+		let distToCore = 0;
+		if (u.team_id === 1) {
+			distToCore = dist(u.pos.x, u.pos.y, 0, 0);
+		} else {
+			distToCore = dist(u.pos.x, u.pos.y, 10000, 10000);
+		}
+		let maxDist = dist(0, 0, config.width, config.height);
+		let distFactor = 1 - (distToCore / maxDist);
+		if (distFactor < 0) distFactor = 0;
+		if (distFactor > 1) distFactor = 1;
+
+		distFactor = 0.3 + (distFactor * 0.7);
+
+		unitWorth *= distFactor;
+
+		if (u.team_id === 1) skHP += unitWorth;
+		else                  gbHP += unitWorth;
+	}
+	
+	skHP += game.teams[0].balance;
+	gbHP += game.teams[1].balance;
+
+	skHP += game.cores[0].hp / 15;
+	skHP *= game.cores[0].hp / config.core_hp;
+	gbHP += game.cores[1].hp / 15;
+	gbHP *= game.cores[1].hp / config.core_hp;
+
+	const total = skHP + gbHP;
+	if (total === 0) return;
+
+	const actualRatio = skHP / total;
+	winRatioDisplay = lerp(winRatioDisplay, actualRatio, RATIO_EASE);
+}
+
+function drawWinRatioBar() {
+	const gridW = (cols + 1) * boxSize;
+	const gridH = (rows + 1) * boxSize;
+
+	const xOff = -cols * boxSize / 2;
+	const yOff = -rows * boxSize / 2;
+
+	const x = xOff - UI_PADDING - BAR_WIDTH;
+
+	const y = yOff;
+	const h = gridH;
+
+	push();
+		noStroke();
+		fill(50);
+		rect(x, y, BAR_WIDTH, h, BAR_ROUNDING);
+
+		const whiteH = winRatioDisplay * h;
+		fill('lightgrey');
+		rect(x, y, BAR_WIDTH, whiteH, BAR_ROUNDING, BAR_ROUNDING, 0, 0);
+
+		const greenH = (1 - winRatioDisplay) * h;
+		fill('green');
+		rect(x, y + h - greenH, BAR_WIDTH, greenH, 0, 0, BAR_ROUNDING, BAR_ROUNDING);
+
+		stroke(0);
+		strokeWeight(2);
+		const midY = y + h/2;
+		line(x, midY, x + BAR_WIDTH, midY);
+	pop();
 }
 
 function draw_health_bar(hp, type, type_id = 1) {
@@ -392,6 +474,7 @@ function custom_scale() {
 }
 
 function draw_grid() {
+	const xOff = -cols * boxSize / 2, yOff = -rows * boxSize / 2;
 	if (cols !== lastCols || rows !== lastRows) {
 		gridTextures = [];
 
@@ -439,56 +522,44 @@ function draw_grid() {
 		lastRows = rows;
 	}
 
-	for (let col = 0; col < gridTextures.length; col++) {
-		for (let row = 0; row < gridTextures[col].length; row++) {
-			let img = gridTextures[col][row];
-			let sx  = col * boxSize - (cols - 1) * boxSize / 2;
-			let sy  = row * boxSize - (rows - 1) * boxSize / 2;
-			image(img, sx, sy, boxSize, boxSize);
+	for (let c = 0; c < cols + 1; c++) {
+		for (let r = 0; r < rows + 1; r++) {
+			image(gridTextures[c][r],
+				  c * boxSize + xOff,
+				  r * boxSize + yOff,
+				  boxSize, boxSize);
 		}
 	}
 }
 
 function draw_cores() {
-	if (game.cores) {
-		for (let core of game.cores) {
-			if (core.pos) {
-				factor = (cols * boxSize) / config.width;
-				push();
-				translate(-(boxSize * cols / 2 - boxSize / 2), -(boxSize * cols / 2 - boxSize / 2), 50);
-				translatex = core.pos.x * factor;
-				translatey = core.pos.y * factor;
-				translate(translatex, translatey, 0);
-				if (core.team_id == 1)
-					image(skeletonCoreTexture, 0, 0, boxSize, boxSize);
-				else
-					image(goblinCoreTexture, 0, 0, boxSize, boxSize);
-				draw_health_bar(core.hp, types.CORE, 1);
-				pop();
-			}
-		}
-	} else {
-		if (lastPacket.cores && lastPacket.cores.length >= 2)
-			alert("No cores left! The game is a draw!");
-		isGameOver = true;
+	const xOff = -cols * boxSize / 2, yOff = -rows * boxSize / 2;
+	factor = (cols * boxSize) / config.width;
+	if (!game.cores) return;
+	for (let core of game.cores) {
+		if (!core.pos) continue;
+		push();
+			translate(xOff, yOff, 0);
+			translate(core.pos.x * factor, core.pos.y * factor, 0);
+			image(core.team_id === 1 ? skeletonCoreTexture : goblinCoreTexture,
+				  0, 0, boxSize, boxSize);
+			draw_health_bar(core.hp, types.CORE);
+		pop();
 	}
 }
 
 function draw_resources() {
-	if (game.resources) {
-		for (let resource of game.resources) {
-			if (resource.pos) {
-				factor = (cols * boxSize) / config.width;
-				push()
-				translate(-(boxSize * cols / 2 - boxSize / 2), -(boxSize * cols / 2 - boxSize / 2), 50);
-				translatex = resource.pos.x * factor;
-				translatey = resource.pos.y * factor;
-				translate(translatex, translatey, 0);
-				image(goldTexture, 0, 0, boxSize, boxSize);
-				draw_health_bar(resource.hp, types.RESOURCE, 1);
-				pop();
-			}
-		}
+	const xOff = -cols * boxSize / 2, yOff = -rows * boxSize / 2;
+	factor = (cols * boxSize) / config.width;
+	if (!game.resources) return;
+	for (let res of game.resources) {
+		if (!res.pos) continue;
+		push();
+			translate(xOff, yOff, 0);
+			translate(res.pos.x * factor, res.pos.y * factor, 0);
+			image(goldTexture, 0, 0, boxSize, boxSize);
+			draw_health_bar(res.hp, types.RESOURCE);
+		pop();
 	}
 }
 
@@ -677,6 +748,7 @@ function drawAnimatedUnit(unit, x, y, stableState, animationCounter, renderDirec
 }
 
 function draw_units() {
+	const xOff = -cols * boxSize / 2, yOff = -rows * boxSize / 2;
 	factor = (cols * boxSize) / config.width;
 	animationCounter++;
 	if (!game.units)
@@ -752,7 +824,7 @@ function draw_units() {
 		}
 
 		push();
-		translate(-(boxSize * cols / 2 - boxSize / 2), -(boxSize * rows / 2 - boxSize / 2), 50);
+		translate(xOff, yOff, 0);
 		translate(x, y, 0);
 
 		const unitCfg = config.units.find(u => u.type_id === unit.type_id);
@@ -840,6 +912,9 @@ function draw() {
 	draw_cores();
 	draw_resources();
 	draw_units();
+
+	updateWinRatio();
+	drawWinRatioBar();
 
 	// draw team information
 	push();
