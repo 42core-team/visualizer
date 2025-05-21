@@ -17,6 +17,9 @@ let currentPos = [];
 let skeletonAnimations = {};
 let goblinAnimations = {};
 let weapons = {};
+let tileSets = {};
+
+let forcePercent = 0.33;
 
 let TEXT_OFFSET_X;
 let TEXT_OFFSET_Y;
@@ -27,7 +30,14 @@ const WEAPON_ANIM_TOTAL_FRAMES = 10;
 const WEAPON_FORWARD_FRAMES = 3;
 const MAX_SLASH_OFFSET = boxSize * 0.5;
 
+const waveLen = 200;
+const waveAmp = 0.1;
+
+var eps     = 1e-4;
+var falloff = 1.5;
+
 let gridTextures = [];
+let lastCols = 0, lastRows = 0;
 
 const UNIT_DIRECTION_CHANGE_THRESHOLD = 5;
 let directionStates = {}; // key: unit.id, value: { state: 'left' | 'right', counter: 0 }
@@ -85,9 +95,19 @@ function draw_health_bar(hp, type, type_id = 1) {
 function preload() {
 	goblinCoreTexture = loadImage('assets/images/goblin_core.png');
 	skeletonCoreTexture = loadImage('assets/images/skeleton_core.png');
-	groundTexture = loadImage('assets/images/ground.png');
-	groundTextureMossy = loadImage('assets/images/ground_mossy.png');
-	groundTextureCracked = loadImage('assets/images/ground_cracked.png');
+
+	stone1 = loadImage('assets/images/stone.png');
+	stone2 = loadImage('assets/images/stone_mossy.png');
+	stone3 = loadImage('assets/images/stone_cracked.png');
+
+	tileSets[0] = [ stone1, stone2, stone3 ];
+
+	grass1 = loadImage('assets/images/deepslate_bricks.png');
+	grass2 = loadImage('assets/images/cracked_deepslate_bricks.png');
+	grass3 = loadImage('assets/images/polished_deepslate.png');
+
+	tileSets[1] = [ grass1, grass2, grass3 ];
+
 	goldTexture = loadImage('assets/images/resource.png');
 	config = loadJSON('assets/data/config.json');
 	game = loadJSON('assets/data/state.json');
@@ -334,6 +354,10 @@ function setup() {
 	slider.position(10, 10);
 	slider.size(190);
 	slider.value(20);
+	slider.changed(() => {
+		lastCols = -1;
+		lastRows = -1;
+	});
 
 	textFont(font);
 	textSize(30);
@@ -367,26 +391,59 @@ function custom_scale() {
 }
 
 function draw_grid() {
-	let nbr = 0;
-	for (let col = 0; col <= cols; col++) {
-		for (let row = 0; row <= rows; row++) {
-			let x = col * (boxSize);
-			let y = row * (boxSize);
-			push();
-			translate(x - (cols - 1) * (boxSize) / 2, y - (rows - 1) * (boxSize) / 2, 0);
-			let img = groundTexture;
-			if (random(1) < 0.05) 
-				img = groundTextureMossy;
-			if (random(1) < 0.2)
-				img = groundTextureCracked;
-			if (nbr < gridTextures.length)
-				img = gridTextures[nbr];
-			else
-				gridTextures.push(img);
-			image(img, 0, 0, boxSize, boxSize);
-			translate(0, 0, (boxSize / 2) + 1);
-			pop();
-			nbr++;
+	if (cols !== lastCols || rows !== lastRows) {
+		gridTextures = [];
+
+		const fp = forcePercent;
+
+		for (let col = 0; col < cols + 1; col++) {
+			gridTextures[col] = [];
+			for (let row = 0; row < rows + 1; row++) {
+				let wx = (col + 0.5) * (config.width / cols);
+				let wy = (row + 0.5) * (config.height / rows);
+
+				let d1 = dist(wx, wy, 0, 0);
+				let d2 = dist(wx, wy, 10000, 10000);
+				let r  = d1 / (d1 + d2);
+
+				let groupIdx;
+				if (r < fp) {
+					groupIdx = 0;
+				} 
+				else if (r > 1 - fp) {
+					groupIdx = 1;
+				} 
+				else {
+					let zoomFactor     = slider.value() / 20;
+					let dynamicWaveLen = waveLen * zoomFactor;
+					let wiggle         = sin((wx + wy) / dynamicWaveLen * TWO_PI) * waveAmp;
+
+					let mixR = (r - fp) / (1 - 2 * fp);
+					let r2   = constrain(mixR + wiggle, 0, 1);
+
+					groupIdx = (random() < r2) ? 1 : 0;
+				}
+
+				let palette = tileSets[groupIdx] || tileSets[0];
+				let index = 0;
+				if (random() < 0.1)
+					index = 1;
+				if (random() < 0.05)
+					index = 2
+				gridTextures[col][row] = palette[index];
+			}
+		}
+
+		lastCols = cols;
+		lastRows = rows;
+	}
+
+	for (let col = 0; col < gridTextures.length; col++) {
+		for (let row = 0; row < gridTextures[col].length; row++) {
+			let img = gridTextures[col][row];
+			let sx  = col * boxSize - (cols - 1) * boxSize / 2;
+			let sy  = row * boxSize - (rows - 1) * boxSize / 2;
+			image(img, sx, sy, boxSize, boxSize);
 		}
 	}
 }
