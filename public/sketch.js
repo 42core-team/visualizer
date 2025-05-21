@@ -25,6 +25,9 @@ const TEXT_SPACING = 30;
 
 let gridTextures = [];
 
+const UNIT_DIRECTION_CHANGE_THRESHOLD = 5;
+let directionStates = {}; // key: unit.id, value: { state: 'left' | 'right', counter: 0 }
+
 // We’ll keep track of each unit’s last position to detect movement.
 let lastPositions = {};  // key: unit.id, value: {x, y, direction}
 
@@ -610,7 +613,23 @@ function draw_units() {
 		// Get movement and direction
 		let movement = isUnitMoving(unit);
 		let isRunningNow = movement.moving;
-		let direction = movement.direction;
+
+		let desiredDir = movement.direction;
+		if (!directionStates[unit.id]) {
+			directionStates[unit.id] = { direction: desiredDir, counter: 0 };
+		}
+		let ds = directionStates[unit.id];
+		if (desiredDir !== ds.direction) {
+			ds.counter++;
+			if (ds.counter >= UNIT_DIRECTION_CHANGE_THRESHOLD) {
+				ds.direction = desiredDir;
+				ds.counter = 0;
+			}
+		} else {
+			ds.counter = 0;
+		}
+		let direction = ds.direction;
+
 
 		if (!animationStates[unit.id]) {
 			animationStates[unit.id] = { state: isRunningNow ? 'run' : 'idle', counter: 0 };
