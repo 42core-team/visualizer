@@ -609,6 +609,10 @@ function drawDirectionalTriangle(x1, y1, x2, y2, healer)
 function draw_target_lines() {
 	if (!game.units) return;
 
+	const xOff = -cols * boxSize / 2;
+	const yOff = -rows * boxSize / 2;
+	const f    = (cols * boxSize) / config.width;
+
 	push(); 
 	strokeWeight(3);
 
@@ -629,21 +633,13 @@ function draw_target_lines() {
 		if (distance < unitConfig.min_range) continue;
 		if (distance > unitConfig.max_range) continue;
 
-		const x1 = unit.pos.x * factor 
-				- (boxSize * cols / 2 - boxSize / 2) 
-				+ boxSize / 2;
+		let ux = unit.pos.x * f,   uy = unit.pos.y * f;
+		let tx = targetEntity.pos.x * f, ty = targetEntity.pos.y * f;
 
-		const y1 = unit.pos.y * factor 
-				- (boxSize * rows / 2 - boxSize / 2) 
-				+ boxSize / 2;
-
-		const x2 = targetEntity.pos.x * factor
-				- (boxSize * cols / 2 - boxSize / 2) 
-				+ boxSize / 2;
-		
-		const y2 = targetEntity.pos.y * factor
-				- (boxSize * rows / 2 - boxSize / 2) 
-				+ boxSize / 2;
+		let x1 = ux + xOff + boxSize/2;
+		let y1 = uy + yOff + boxSize/2;
+		let x2 = tx + xOff + boxSize/2;
+		let y2 = ty + yOff + boxSize/2;
 
 		if (unit.type_id === 5) {
 			drawDirectionalTriangle(x1, y1, x2, y2, true);
