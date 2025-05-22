@@ -3,6 +3,7 @@ package main
 import (
 	"core/visualizer/env"
 	"core/visualizer/websockethandler"
+	"log"
 	"text/template"
 
 	"github.com/gofiber/contrib/websocket"
@@ -14,7 +15,7 @@ func main() {
 
 	app.Get("/sketch.js", func(c *fiber.Ctx) error {
 		// Get the environment variable or use a default value
-		socketServer := env.GetEnv("HOST", "127.0.0.1:3000")
+		socketServer := env.GetEnv("HOST", "127.0.0.1:3030")
 
 		// Parse the JavaScript file as a template
 		tmpl, err := template.ParseFiles("./public/sketch.js")
@@ -46,5 +47,9 @@ func main() {
 
 	app.Get("/ws", websocket.New(websockethandler.HandleWebSocket))
 
-	app.Listen(":" + env.GetEnv("PORT", "3000"))
+	addr := ":" + env.GetEnv("PORT", "3030")
+	log.Printf("🌐 Listening on %s\n", addr)
+	if err := app.Listen(addr); err != nil {
+		log.Fatalf("💥 Listen failed: %v", err)
+	}
 }

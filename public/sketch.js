@@ -17,25 +17,125 @@ let currentPos = [];
 let skeletonAnimations = {};
 let goblinAnimations = {};
 let weapons = {};
+let tileSets = {};
+
+let forcePercent = 0.33;
 
 let TEXT_OFFSET_X;
 let TEXT_OFFSET_Y;
 const LINE_HEIGHT = 50;
 const TEXT_SPACING = 30;
+const UI_PADDING = 20;
+
+const WEAPON_ANIM_TOTAL_FRAMES = 10;
+const WEAPON_FORWARD_FRAMES = 3;
+const MAX_SLASH_OFFSET = boxSize * 0.5;
+
+const waveLen = 200;
+const waveAmp = 0.1;
+
+var eps     = 1e-4;
+var falloff = 1.5;
 
 let gridTextures = [];
+let lastCols = 0, lastRows = 0;
 
-// We’ll keep track of each unit’s last position to detect movement.
+const UNIT_DIRECTION_CHANGE_THRESHOLD = 5;
+let directionStates = {}; // key: unit.id, value: { state: 'left' | 'right', counter: 0 }
+
 let lastPositions = {};  // key: unit.id, value: {x, y, direction}
 
-let animationCounter = 0; // global ticker for frames
-let animationStates = {}; // key: unit.id, value: { state: 'idle' | 'run', counter: 0 }
+let animationCounter = 0;
+let animationStates = {}; // key: unit.id, value: { state: 'idle' | 'run', counter: 0, weaponCounter: 0 }
 const STATE_CHANGE_THRESHOLD = 5;
+
+let winRatioDisplay = 0.5;
+const BAR_WIDTH       = 20;         // bar thickness
+const BAR_ROUNDING    = 10;         // px corner radius
+const RATIO_EASE      = 0.05;       // lerp factor
 
 const types = {
 	CORE: 0,
 	UNIT: 1,
 	RESOURCE: 2
+}
+
+function updateWinRatio() {
+	if (!game.units || game.units.length === 0) return;
+	if (!game.teams || game.teams.length < 2) return;
+	if (!game.cores || game.cores.length < 2) return;
+
+	let skHP = 0, gbHP = 0;
+	for (let u of game.units) {
+		let unitWorth = u.hp;
+		if (u.type_id === 2) unitWorth *= 0.35; // worker
+		if (u.type_id === 3) unitWorth *= 0.6; // tank
+
+		// calculate distance to opponent core from unit position
+		let distToCore = 0;
+		if (u.team_id === 1) {
+			distToCore = dist(u.pos.x, u.pos.y, 0, 0);
+		} else {
+			distToCore = dist(u.pos.x, u.pos.y, 10000, 10000);
+		}
+		let maxDist = dist(0, 0, config.width, config.height);
+		let distFactor = 1 - (distToCore / maxDist);
+		if (distFactor < 0) distFactor = 0;
+		if (distFactor > 1) distFactor = 1;
+
+		distFactor = 0.3 + (distFactor * 0.7);
+
+		unitWorth *= distFactor;
+
+		if (u.team_id === 1) skHP += unitWorth;
+		else                  gbHP += unitWorth;
+	}
+	
+	skHP += game.teams[0].balance;
+	gbHP += game.teams[1].balance;
+
+	skHP += game.cores[0].hp / 15;
+	skHP *= game.cores[0].hp / config.core_hp;
+	gbHP += game.cores[1].hp / 15;
+	gbHP *= game.cores[1].hp / config.core_hp;
+
+	const total = skHP + gbHP;
+	if (total === 0) return;
+
+	const actualRatio = skHP / total;
+	winRatioDisplay = lerp(winRatioDisplay, actualRatio, RATIO_EASE);
+}
+
+function drawWinRatioBar() {
+	const gridW = (cols + 1) * boxSize;
+	const gridH = (rows + 1) * boxSize;
+
+	const xOff = -cols * boxSize / 2;
+	const yOff = -rows * boxSize / 2;
+
+	const x = xOff - UI_PADDING - BAR_WIDTH;
+
+	const y = yOff;
+	const h = gridH;
+
+	push();
+		noStroke();
+		fill(50);
+		rect(x, y, BAR_WIDTH, h, BAR_ROUNDING);
+
+		const whiteH = winRatioDisplay * h;
+		fill('lightgrey');
+		rect(x, y, BAR_WIDTH, whiteH, BAR_ROUNDING, BAR_ROUNDING, 0, 0);
+
+		const greenH = (1 - winRatioDisplay) * h;
+		fill('green');
+		rect(x, y + h - greenH, BAR_WIDTH, greenH, 0, 0, BAR_ROUNDING, BAR_ROUNDING);
+
+		stroke(0);
+		strokeWeight(2);
+		const midY = y + h/2;
+		line(x, midY, x + BAR_WIDTH, midY);
+	pop();
 }
 
 function draw_health_bar(hp, type, type_id = 1) {
@@ -78,13 +178,23 @@ function draw_health_bar(hp, type, type_id = 1) {
 function preload() {
 	goblinCoreTexture = loadImage('assets/images/goblin_core.png');
 	skeletonCoreTexture = loadImage('assets/images/skeleton_core.png');
-	groundTexture = loadImage('assets/images/ground.png');
-	groundTextureMossy = loadImage('assets/images/ground_mossy.png');
-	groundTextureCracked = loadImage('assets/images/ground_cracked.png');
+
+	stone1 = loadImage('assets/images/stone.png');
+	stone2 = loadImage('assets/images/stone_mossy.png');
+	stone3 = loadImage('assets/images/stone_cracked.png');
+
+	tileSets[0] = [ stone1, stone2, stone3 ];
+
+	grass1 = loadImage('assets/images/deepslate_bricks.png');
+	grass2 = loadImage('assets/images/cracked_deepslate_bricks.png');
+	grass3 = loadImage('assets/images/polished_deepslate.png');
+
+	tileSets[1] = [ grass1, grass2, grass3 ];
+
 	goldTexture = loadImage('assets/images/resource.png');
 	config = loadJSON('assets/data/config.json');
 	game = loadJSON('assets/data/state.json');
-	font = loadFont('assets/font/BlackOpsOne-Regular.ttf');
+	font = loadFont('assets/font/Quantico-Regular.ttf');
 
 	skeletonAnimations["basic"] = {
 		idle: [
@@ -324,9 +434,13 @@ function setup() {
 	background(0);
 
 	slider = createSlider(10, 60);
-	slider.position(10, 10);
+	slider.position(windowWidth - slider.width - UI_PADDING - 30, UI_PADDING);
 	slider.size(190);
 	slider.value(20);
+	slider.changed(() => {
+		lastCols = -1;
+		lastRows = -1;
+	});
 
 	textFont(font);
 	textSize(30);
@@ -360,70 +474,92 @@ function custom_scale() {
 }
 
 function draw_grid() {
-	let nbr = 0;
-	for (let col = 0; col <= cols; col++) {
-		for (let row = 0; row <= rows; row++) {
-			let x = col * (boxSize);
-			let y = row * (boxSize);
-			push();
-			translate(x - (cols - 1) * (boxSize) / 2, y - (rows - 1) * (boxSize) / 2, 0);
-			let img = groundTexture;
-			if (random(1) < 0.05) 
-				img = groundTextureMossy;
-			if (random(1) < 0.2)
-				img = groundTextureCracked;
-			if (nbr < gridTextures.length)
-				img = gridTextures[nbr];
-			else
-				gridTextures.push(img);
-			image(img, 0, 0, boxSize, boxSize);
-			translate(0, 0, (boxSize / 2) + 1);
-			pop();
-			nbr++;
+	const xOff = -cols * boxSize / 2, yOff = -rows * boxSize / 2;
+	if (cols !== lastCols || rows !== lastRows) {
+		gridTextures = [];
+
+		const fp = forcePercent;
+
+		for (let col = 0; col < cols + 1; col++) {
+			gridTextures[col] = [];
+			for (let row = 0; row < rows + 1; row++) {
+				let wx = (col + 0.5) * (config.width / cols);
+				let wy = (row + 0.5) * (config.height / rows);
+
+				let d1 = dist(wx, wy, 0, 0);
+				let d2 = dist(wx, wy, 10000, 10000);
+				let r  = d1 / (d1 + d2);
+
+				let groupIdx;
+				if (r < fp) {
+					groupIdx = 0;
+				} 
+				else if (r > 1 - fp) {
+					groupIdx = 1;
+				} 
+				else {
+					let zoomFactor     = slider.value() / 20;
+					let dynamicWaveLen = waveLen * zoomFactor;
+					let wiggle         = sin((wx + wy) / dynamicWaveLen * TWO_PI) * waveAmp;
+
+					let mixR = (r - fp) / (1 - 2 * fp);
+					let r2   = constrain(mixR + wiggle, 0, 1);
+
+					groupIdx = (random() < r2) ? 1 : 0;
+				}
+
+				let palette = tileSets[groupIdx] || tileSets[0];
+				let index = 0;
+				if (random() < 0.1)
+					index = 1;
+				if (random() < 0.05)
+					index = 2
+				gridTextures[col][row] = palette[index];
+			}
+		}
+
+		lastCols = cols;
+		lastRows = rows;
+	}
+
+	for (let c = 0; c < cols + 1; c++) {
+		for (let r = 0; r < rows + 1; r++) {
+			image(gridTextures[c][r],
+				  c * boxSize + xOff,
+				  r * boxSize + yOff,
+				  boxSize, boxSize);
 		}
 	}
 }
 
 function draw_cores() {
-	if (game.cores) {
-		for (let core of game.cores) {
-			if (core.pos) {
-				factor = (cols * boxSize) / config.width;
-				push();
-				translate(-(boxSize * cols / 2 - boxSize / 2), -(boxSize * cols / 2 - boxSize / 2), 50);
-				translatex = core.pos.x * factor;
-				translatey = core.pos.y * factor;
-				translate(translatex, translatey, 0);
-				if (core.team_id == 1)
-					image(skeletonCoreTexture, 0, 0, boxSize, boxSize);
-				else
-					image(goblinCoreTexture, 0, 0, boxSize, boxSize);
-				draw_health_bar(core.hp, types.CORE, 1);
-				pop();
-			}
-		}
-	} else {
-		if (lastPacket.cores && lastPacket.cores.length >= 2)
-			alert("No cores left! The game is a draw!");
-		isGameOver = true;
+	const xOff = -cols * boxSize / 2, yOff = -rows * boxSize / 2;
+	factor = (cols * boxSize) / config.width;
+	if (!game.cores) return;
+	for (let core of game.cores) {
+		if (!core.pos) continue;
+		push();
+			translate(xOff, yOff, 0);
+			translate(core.pos.x * factor, core.pos.y * factor, 0);
+			image(core.team_id === 1 ? skeletonCoreTexture : goblinCoreTexture,
+				  0, 0, boxSize, boxSize);
+			draw_health_bar(core.hp, types.CORE);
+		pop();
 	}
 }
 
 function draw_resources() {
-	if (game.resources) {
-		for (let resource of game.resources) {
-			if (resource.pos) {
-				factor = (cols * boxSize) / config.width;
-				push()
-				translate(-(boxSize * cols / 2 - boxSize / 2), -(boxSize * cols / 2 - boxSize / 2), 50);
-				translatex = resource.pos.x * factor;
-				translatey = resource.pos.y * factor;
-				translate(translatex, translatey, 0);
-				image(goldTexture, 0, 0, boxSize, boxSize);
-				draw_health_bar(resource.hp, types.RESOURCE, 1);
-				pop();
-			}
-		}
+	const xOff = -cols * boxSize / 2, yOff = -rows * boxSize / 2;
+	factor = (cols * boxSize) / config.width;
+	if (!game.resources) return;
+	for (let res of game.resources) {
+		if (!res.pos) continue;
+		push();
+			translate(xOff, yOff, 0);
+			translate(res.pos.x * factor, res.pos.y * factor, 0);
+			image(goldTexture, 0, 0, boxSize, boxSize);
+			draw_health_bar(res.hp, types.RESOURCE);
+		pop();
 	}
 }
 
@@ -473,6 +609,10 @@ function drawDirectionalTriangle(x1, y1, x2, y2, healer)
 function draw_target_lines() {
 	if (!game.units) return;
 
+	const xOff = -cols * boxSize / 2;
+	const yOff = -rows * boxSize / 2;
+	const f    = (cols * boxSize) / config.width;
+
 	push(); 
 	strokeWeight(3);
 
@@ -493,21 +633,13 @@ function draw_target_lines() {
 		if (distance < unitConfig.min_range) continue;
 		if (distance > unitConfig.max_range) continue;
 
-		const x1 = unit.pos.x * factor 
-				- (boxSize * cols / 2 - boxSize / 2) 
-				+ boxSize / 2;
+		let ux = unit.pos.x * f,   uy = unit.pos.y * f;
+		let tx = targetEntity.pos.x * f, ty = targetEntity.pos.y * f;
 
-		const y1 = unit.pos.y * factor 
-				- (boxSize * rows / 2 - boxSize / 2) 
-				+ boxSize / 2;
-
-		const x2 = targetEntity.pos.x * factor
-				- (boxSize * cols / 2 - boxSize / 2) 
-				+ boxSize / 2;
-		
-		const y2 = targetEntity.pos.y * factor
-				- (boxSize * rows / 2 - boxSize / 2) 
-				+ boxSize / 2;
+		let x1 = ux + xOff + boxSize/2;
+		let y1 = uy + yOff + boxSize/2;
+		let x2 = tx + xOff + boxSize/2;
+		let y2 = ty + yOff + boxSize/2;
 
 		if (unit.type_id === 5) {
 			drawDirectionalTriangle(x1, y1, x2, y2, true);
@@ -536,8 +668,37 @@ function findTargetEntity(targetId) {
 	return target || null;
 }
 
+function drawWeaponSlash(unit, weaponTex, weaponCounter) {
+	const target = findTargetEntity(unit.target_id);
+	if (!target) return;
 
-function drawAnimatedUnit(unit, x, y, stableState, animationCounter, direction)
+	const dx = (target.pos.x - unit.pos.x) * factor;
+	const dy = (target.pos.y - unit.pos.y) * factor;
+
+	const angle = atan2(dy, dx) + HALF_PI;
+
+	const t    = weaponCounter / WEAPON_ANIM_TOTAL_FRAMES;
+	const ease = t < 0.5
+		? map(t, 0, 0.5, 0, MAX_SLASH_OFFSET)
+		: map(t, 0.5, 1, MAX_SLASH_OFFSET, 0);
+
+	let dist = sqrt(dx*dx + dy*dy) || 1;
+	const ux  = dx / dist;
+	const uy  = dy / dist;
+
+	const ox = ux * ease;
+	const oy = uy * ease;
+
+	push();
+		translate(boxSize/2 + ox, boxSize/2 + oy);
+		rotate(angle);
+		imageMode(CENTER);
+		image(weaponTex, 0, 0, boxSize, boxSize);
+		imageMode(CORNER);
+	pop();
+}
+
+function drawAnimatedUnit(unit, x, y, stableState, animationCounter, renderDirection)
 {
 	let raceAnimations = (unit.team_id === 1) ? skeletonAnimations : goblinAnimations;
 	let { subType, weapon } = getSubTypeAndWeapon(unit.type_id);
@@ -555,7 +716,7 @@ function drawAnimatedUnit(unit, x, y, stableState, animationCounter, direction)
 
 	let unitImage = animSet[state][frameIndex];
 	if (unitImage) {
-		if (direction === 'left') {
+		if (renderDirection === 'left') {
 			push();
 			scale(-1, 1);
 			image(unitImage, -boxSize, 0, boxSize, boxSize);
@@ -565,10 +726,13 @@ function drawAnimatedUnit(unit, x, y, stableState, animationCounter, direction)
 		}
 	}
 
-	if (weapons[weapon]) {
-		if (direction === 'left') {
-			push();
-			scale(-1, 1);
+	if (unit.enableWeaponAnimation && weapons[weapon]) {
+		let as = animationStates[unit.id];
+		as.weaponCounter = (as.weaponCounter + 1) % WEAPON_ANIM_TOTAL_FRAMES;
+		drawWeaponSlash(unit, weapons[weapon], as.weaponCounter);
+	} else {
+		if (renderDirection === 'left') {
+			push(); scale(-1,1);
 			image(weapons[weapon], -boxSize, 0, boxSize, boxSize);
 			pop();
 		} else {
@@ -580,6 +744,7 @@ function drawAnimatedUnit(unit, x, y, stableState, animationCounter, direction)
 }
 
 function draw_units() {
+	const xOff = -cols * boxSize / 2, yOff = -rows * boxSize / 2;
 	factor = (cols * boxSize) / config.width;
 	animationCounter++;
 	if (!game.units)
@@ -592,7 +757,6 @@ function draw_units() {
 		x = unit.pos.x * factor;
 		y = unit.pos.y * factor;
 
-		// Group units in the same place (existing logic)
 		let exists = false;
 		for (let unitInOnePlace of unitsInOnePlace) {
 			let distance = calc_distance(unitInOnePlace.x, unitInOnePlace.y, unit.pos.x, unit.pos.y);
@@ -610,10 +774,26 @@ function draw_units() {
 		// Get movement and direction
 		let movement = isUnitMoving(unit);
 		let isRunningNow = movement.moving;
-		let direction = movement.direction;
+
+		let desiredDir = movement.direction;
+		if (!directionStates[unit.id]) {
+			directionStates[unit.id] = { direction: desiredDir, counter: 0 };
+		}
+		let ds = directionStates[unit.id];
+		if (desiredDir !== ds.direction) {
+			ds.counter++;
+			if (ds.counter >= UNIT_DIRECTION_CHANGE_THRESHOLD) {
+				ds.direction = desiredDir;
+				ds.counter = 0;
+			}
+		} else {
+			ds.counter = 0;
+		}
+		let direction = ds.direction;
+
 
 		if (!animationStates[unit.id]) {
-			animationStates[unit.id] = { state: isRunningNow ? 'run' : 'idle', counter: 0 };
+			animationStates[unit.id] = { state: isRunningNow ? 'run' : 'idle', counter: 0, weaponCounter: 0 };
 		} else {
 			let currentState = animationStates[unit.id].state;
 			if ((isRunningNow && currentState === 'idle') || (!isRunningNow && currentState === 'run')) {
@@ -640,52 +820,59 @@ function draw_units() {
 		}
 
 		push();
-		translate(-(boxSize * cols / 2 - boxSize / 2), -(boxSize * cols / 2 - boxSize / 2), 50);
+		translate(xOff, yOff, 0);
 		translate(x, y, 0);
 
+		const unitCfg = config.units.find(u => u.type_id === unit.type_id);
+		const tgt = unit.target_id ? findTargetEntity(unit.target_id) : null;
+		const hasMeleeTarget =
+			unit.target_id
+			&& unitCfg
+			&& tgt
+			&& tgt.pos
+			&& (() => {
+					const d = calc_distance(
+						unit.pos.x, unit.pos.y,
+						tgt.pos.x,  tgt.pos.y
+					);
+					return d >= unitCfg.min_range && d <= unitCfg.max_range;
+				})();
+
+		unit.enableWeaponAnimation = [1,2,3].includes(unit.type_id) && hasMeleeTarget;
 		drawAnimatedUnit(unit, x, y, stableState, animationCounter, direction);
 
 		pop();
 	}
 }
 
-
 function draw_team_information() {
-	if (!game.teams) return;
+	if (!game.teams || !config.teams) return;
 
-	let teamIcon = '💀';
-	let currentY = TEXT_OFFSET_Y;
+	textFont(font);
+	textSize(30);
+	textAlign(LEFT, TOP);
+	fill('white');
 
-	for (let [index, team] of game.teams.entries()) {
-		fill('white');
-		text(`${teamIcon} Team: ${config.teams[index].name}`, TEXT_OFFSET_X, currentY);
-		currentY += TEXT_SPACING;
-		text(`Balance: ${team.balance}`, TEXT_OFFSET_X, currentY);
-		currentY += TEXT_SPACING + 10;
-		teamIcon = '🤢';
-	}
+	const team0 = game.teams[0];
+	fill('lightgray');
+	text(`Skeletons: ${config.teams[0].name}`, UI_PADDING, UI_PADDING);
+	text(`Balance: ${team0.balance}`, UI_PADDING, UI_PADDING + TEXT_SPACING);
 }
 
-function draw_resources_feed() {
-	if (!game.resources || !game.teams) return;
+function draw_second_team_information() {
+	if (!game.teams || !config.teams || game.teams.length < 2) return;
 
-	let currentY = TEXT_OFFSET_Y + (game.teams.length * (TEXT_SPACING + 10)) + 70;
-
+	textFont(font);
+	textSize(30);
+	textAlign(RIGHT, BOTTOM);
 	fill('white');
-	text("Resources", TEXT_OFFSET_X, currentY);
-	currentY += TEXT_SPACING;
-	text(`Count: ${game.resources.length}`, TEXT_OFFSET_X, currentY);
-}
 
-function draw_unit_feed() {
-	if (!game.units || !game.teams) return;
-
-	let currentY = TEXT_OFFSET_Y + (game.teams.length * (TEXT_SPACING + 10)) + 140;
-
-	fill('white');
-	text("Units", TEXT_OFFSET_X, currentY);
-	currentY += TEXT_SPACING;
-	text(`Count: ${game.units.length}`, TEXT_OFFSET_X, currentY);
+	const team1 = game.teams[1];
+	const x = width  - UI_PADDING;
+	const y = height - UI_PADDING;
+	fill('greenyellow')
+	text(`Goblins: ${config.teams[1].name}`, x, y - TEXT_SPACING);
+	text(`Balance: ${team1.balance}`, x, y);
 }
 
 function draw_game_over() {
@@ -698,11 +885,11 @@ function draw_game_over() {
 		strokeWeight(2);
 		text
 		if (game.cores[0].team_id == 1) {
-			fill('white');
-			text("💀 Team " + config.teams[0].name + " wins!", 0, 0);
+			fill('lightgray');
+			text("Skeleton Team " + config.teams[0].name + " wins!", 0, 0);
 		} else {
-			fill('green');
-			text("🤢 Team " + config.teams[1].name + " wins!", 0, 0);
+			fill('greenyellow');
+			text("Goblin Team " + config.teams[1].name + " wins!", 0, 0);
 		}
 		pop();
 		isGameOver = true;
@@ -722,10 +909,16 @@ function draw() {
 	draw_resources();
 	draw_units();
 
+	updateWinRatio();
+	drawWinRatioBar();
+
 	// draw team information
-	draw_team_information();
-	draw_unit_feed();
-	draw_resources_feed();
+	push();
+		resetMatrix();
+		draw_team_information();
+		draw_second_team_information();
+	pop();
+
 	draw_game_over();
 	lastPacket = game;
 }
