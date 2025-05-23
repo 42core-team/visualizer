@@ -54,10 +54,84 @@ const BAR_WIDTH       = 20;         // bar thickness
 const BAR_ROUNDING    = 10;         // px corner radius
 const RATIO_EASE      = 0.05;       // lerp factor
 
+let lastHP = {};  // key: unit.id, value: hp
+let bloodStains = [];
+
 const types = {
 	CORE: 0,
 	UNIT: 1,
 	RESOURCE: 2
+}
+
+// ─── Blood settings (area-based) ───────────────────────────────────────────
+const BLOOD_MAX_AREA     = 25000000;
+
+function updateBloodStains() {
+	// compute the same offsets you use in drawBlood/draw_grid
+	const xOff = -cols * boxSize / 2;
+	const yOff = -rows * boxSize / 2;
+	const f    = (cols * boxSize) / config.width;
+
+	for (let unit of game.units || []) {
+		if (!(unit.id in lastHP)) lastHP[unit.id] = unit.hp;
+		const prev = lastHP[unit.id];
+		const lost = prev - unit.hp;
+
+		if (lost > 0) {
+			// instead of top-left, we now add +boxSize/2 to center it
+			const x = unit.pos.x * f + xOff + boxSize / 2;
+			const y = unit.pos.y * f + yOff + boxSize / 2;
+
+			let merged = false;
+			for (let stain of bloodStains) {
+				const r = Math.sqrt(stain.area / Math.PI);
+				if (dist(x, y, stain.x, stain.y) < r) {
+					stain.area += lost;
+					if (stain.area > BLOOD_MAX_AREA) {
+						stain.area = BLOOD_MAX_AREA;
+					}
+					merged = true;
+					break;
+				}
+			}
+			if (!merged) {
+				bloodStains.push({
+					x:    x,
+					y:    y,
+					area: Math.min(lost, BLOOD_MAX_AREA)
+				});
+			}
+		}
+		lastHP[unit.id] = unit.hp;
+	}
+}
+
+function drawBlood() {
+	noStroke();
+	fill(150, 0, 0, 200);
+
+	for (let i = 0; i < bloodStains.length; i++) {
+		const a = bloodStains[i];
+		// compute radius from stored area
+		const rA = Math.sqrt(a.area / Math.PI);
+		ellipse(a.x, a.y, rA*2, rA*2);
+
+		// connect overlaps with a nice bridge
+		for (let j = i + 1; j < bloodStains.length; j++) {
+			const b = bloodStains[j];
+			const rB = Math.sqrt(b.area / Math.PI);
+			if (dist(a.x, a.y, b.x, b.y) < (rA + rB) * 0.5) {
+				const midX = (a.x + b.x) / 2;
+				const midY = (a.y + b.y) / 2;
+				const h    = min(rA, rB) * 0.3;
+				beginShape();
+				  vertex(a.x, a.y);
+				  quadraticVertex(midX, midY - h, b.x, b.y);
+				  quadraticVertex(midX, midY + h, a.x, a.y);
+				endShape(CLOSE);
+			}
+		}
+	}
 }
 
 function updateWinRatio() {
@@ -901,6 +975,8 @@ function draw() {
 
 	// draw playing field and its elements
 	draw_grid();
+	updateBloodStains();
+	drawBlood();
 	draw_target_lines();
 	draw_cores();
 	draw_resources();
