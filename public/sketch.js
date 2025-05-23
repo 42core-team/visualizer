@@ -403,6 +403,7 @@ function preload() {
 }
 
 function setupWebSocket() {
+	bloodStains = [];
 	socket = new WebSocket('ws://{{.socket}}/ws');
 
 	// WebSocket event listeners
@@ -495,6 +496,7 @@ function isUnitMoving(unit)
 }
 
 function setup() {
+	bloodStains = [];
 	setupWebSocket();
 
 	cols = config.width / 1000;
@@ -523,6 +525,7 @@ function setup() {
 }
 
 function reconnect() {
+	bloodStains = [];
 	configPresent = false;
 	isGameOver = false;
 	setTimeout(setupWebSocket, 1000);
