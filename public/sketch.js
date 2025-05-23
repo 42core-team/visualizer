@@ -955,12 +955,16 @@ function draw_game_over() {
 		stroke(0);
 		strokeWeight(2);
 		text
-		if (game.cores[0].team_id == 1) {
-			fill('lightgray');
-			text("Skeleton Team " + config.teams[0].name + " wins!", 0, 0);
+		if (game.cores.length > 1) {
+			text("Someone exited, Pauls gotta look at the log uwu", 0, 0);
 		} else {
-			fill('greenyellow');
-			text("Goblin Team " + config.teams[1].name + " wins!", 0, 0);
+			if (game.cores[0].team_id == 1) {
+				fill('lightgray');
+				text("Skeleton Team " + config.teams[0].name + " wins!", 0, 0);
+			} else {
+				fill('greenyellow');
+				text("Goblin Team " + config.teams[1].name + " wins!", 0, 0);
+			}
 		}
 		pop();
 		isGameOver = true;
