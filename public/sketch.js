@@ -90,9 +90,6 @@ function updateWinRatio() {
 		if (u.team_id === 1) skHP += unitWorth;
 		else                  gbHP += unitWorth;
 	}
-	
-	skHP += game.teams[0].balance;
-	gbHP += game.teams[1].balance;
 
 	skHP += game.cores[0].hp / 15;
 	skHP *= game.cores[0].hp / config.core_hp;
